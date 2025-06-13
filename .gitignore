@@ -1,0 +1,59 @@
+# Archivos y carpetas específicas de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+
+# Entornos virtuales
+venv/
+env/
+ENV/
+
+# Carpetas de construcción de PyInstaller
+build/
+dist/
+*.spec
+
+# Archivos de IDE y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+.vs/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Archivos de registro y caché
+*.log
+.cache/
+logs/
+
+# Archivos temporales
+*.tmp
+*.bak
+*.swp
+*~
+
+# Recursos compilados de PyQt
+*.qrc.py
+*.ui.py
+
+# Archivos de base de datos
+*.db
+*.sqlite3
+
+# Archivos de configuración local
+.env
+config.local.ini
+
+# Carpetas de pruebas y cobertura
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
