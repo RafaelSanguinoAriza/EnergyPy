@@ -100,7 +100,7 @@ EnergyPy es una aplicación multiplataforma desarrollada en Python con PyQt5 que
 
 ### Desde el ejecutable
 
-1. Descarga la última versión desde la sección de [Releases](https://github.com/RafaelSanguinoAriza/EnergyPy/releases/tag/v1.0.0)
+1. Descarga la última versión desde la sección de [Releases](https://github.com/RafaelSanguinoAriza/EnergyPy/releases/tag/EnergyPy)
 2. Extrae el contenido del archivo ZIP
 3. Ejecuta `EnergyPy.exe` (Windows), `EnergyPy.app` (macOS) o `EnergyPy` (Linux) como administrador
 4. Ya estás listo para usar EnergyPy!
