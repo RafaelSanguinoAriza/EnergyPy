@@ -1,0 +1,16 @@
+PyQt5>=5.15.0
+PyQt5-sip>=12.11.0
+python-dateutil>=2.8.2
+pyinstaller>=5.13.0
+
+# Dependencias específicas por plataforma
+pywin32>=300;platform_system=="Windows"
+pyobjc-core>=9.2;platform_system=="Darwin"
+pyobjc-framework-Cocoa>=9.2;platform_system=="Darwin"
+
+# Dependencias opcionales para mejor rendimiento
+pillow>=10.0.0  # Para mejor manejo de imágenes 
+darkdetect>=0.8.0  # Para detección automática del tema del sistema
+
+# Dependencias adicionales recomendadas
+qt-material  # Para temas materiales en PyQt
