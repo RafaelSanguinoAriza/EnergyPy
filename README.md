@@ -36,9 +36,9 @@ Descarga la última versión desde **[GitHub Releases](https://github.com/Rafael
 
 ### 🪟 Windows
 
-[![Windows - Instalador NSIS (recomendado)](https://img.shields.io/badge/Windows-Instalador_NSIS_%28recomendado%29-0078D6?style=for-the-badge)](https://github.com/RafaelSanguinoAriza/EnergyPy/releases)
-[![Windows - Instalador MSI](https://img.shields.io/badge/Windows-Instalador_MSI-0078D6?style=for-the-badge)](https://github.com/RafaelSanguinoAriza/EnergyPy/releases)
-[![Windows - Versión portátil (.zip)](https://img.shields.io/badge/Windows-Versi%C3%B3n_port%C3%A1til_%28.zip%29-0078D6?style=for-the-badge)](https://github.com/RafaelSanguinoAriza/EnergyPy/releases)
+[![Windows - Instalador NSIS (recomendado)](https://img.shields.io/badge/Windows-Instalador_NSIS_%28recomendado%29-0078D6?style=for-the-badge)](https://github.com/RafaelSanguinoAriza/EnergyPy/releases/download/EnergyPy/EnergyPy_2.0.0_x64-setup.exe)
+[![Windows - Instalador MSI](https://img.shields.io/badge/Windows-Instalador_MSI-0078D6?style=for-the-badge)](https://github.com/RafaelSanguinoAriza/EnergyPy/releases/download/EnergyPy/EnergyPy_2.0.0_x64_en-US.msi)
+[![Windows - Versión portátil (.zip)](https://img.shields.io/badge/Windows-Versi%C3%B3n_port%C3%A1til_%28.zip%29-0078D6?style=for-the-badge)](https://github.com/RafaelSanguinoAriza/EnergyPy/releases/download/EnergyPy/EenergyPy_v2.0.0.zip)
 
 ### 🐧 Linux
 
