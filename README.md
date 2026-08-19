@@ -41,9 +41,9 @@ Descarga la última versión desde **[GitHub Releases](https://github.com/Rafael
 
 ### Windows
 
-[![Windows - Instalador NSIS (recomendado)](https://img.shields.io/badge/Windows-Instalador_NSIS_%28recomendado%29-0078D6?style=for-the-badge)](https://github.com/RafaelSanguinoAriza/EnergyPy/releases/latest)
-[![Windows - Instalador MSI](https://img.shields.io/badge/Windows-Instalador_MSI-0078D6?style=for-the-badge)](https://github.com/RafaelSanguinoAriza/EnergyPy/releases/latest)
-[![Windows - Versión portátil (.zip)](https://img.shields.io/badge/Windows-Versi%C3%B3n_port%C3%A1til_%28.zip%29-0078D6?style=for-the-badge)](https://github.com/RafaelSanguinoAriza/EnergyPy/releases/latest)
+[![Windows - Instalador NSIS (recomendado)](https://img.shields.io/badge/Windows-Instalador_NSIS_%28recomendado%29-0078D6?style=for-the-badge)](https://github.com/RafaelSanguinoAriza/EnergyPy/releases/download/EnergyPy/EnergyPy_2.0.1.zip)
+[![Windows - Instalador MSI](https://img.shields.io/badge/Windows-Instalador_MSI-0078D6?style=for-the-badge)](https://github.com/RafaelSanguinoAriza/EnergyPy/releases/download/EnergyPy/EnergyPy_2.0.1_x64_en-US.msi)
+[![Windows - Versión portátil (.zip)](https://img.shields.io/badge/Windows-Versi%C3%B3n_port%C3%A1til_%28.zip%29-0078D6?style=for-the-badge)](https://github.com/RafaelSanguinoAriza/EnergyPy/releases/download/EnergyPy/EnergyPy_2.0.1_x64-setup.exe)
 
 ### Linux
 
@@ -113,12 +113,18 @@ Remove-Item -Recurse -Force src-tauri\target
 ```
 
 Los instaladores (NSIS/MSI) quedan en `src-tauri/target/release/bundle/`. Para
-generar el **zip portátil** tras el build (exe + `WebView2Loader.dll` + `LEEME.txt`):
+generar el **zip portátil** tras el build (exe + `LEEME.txt` + `README.txt`):
 
 ```powershell
+# 1 Crear carpeta dist\EnergyPy
 New-Item -ItemType Directory -Path dist\EnergyPy -Force
-Copy-Item src-tauri\target\release\energypy_v20.exe, src-tauri\target\release\WebView2Loader.dll dist\EnergyPy\
-Compress-Archive -Path dist\EnergyPy -DestinationPath dist\EnergyPy_2.0.1_x64_portable.zip
+# 2 Copiar ejecutables
+Copy-Item src-tauri\target\release\energypy_v20.exe dist\EnergyPy\
+# 3 Copiar archivos de texto
+Copy-Item dist\LEEME.txt, dist\README.txt dist\EnergyPy\
+# 4 Comprimir
+Compress-Archive -Path dist\EnergyPy -DestinationPath dist\EnergyPy_2.0.1_x64_portable.zip -Force
+# 5 Eliminar carpeta dist\EnergyPy
 Remove-Item dist\EnergyPy -Recurse -Force
 ```
 
