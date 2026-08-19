@@ -2,7 +2,9 @@
   import { t } from "$lib/i18n";
   import Card from "../ui/Card.svelte";
   import ProgressBar from "../ui/ProgressBar.svelte";
-  import { formatBytes, formatPercent } from "$lib/formatters";
+  import Skeleton from "../ui/Skeleton.svelte";
+  import AnimatedNumber from "../ui/AnimatedNumber.svelte";
+  import { formatBytes } from "$lib/formatters";
   import { MemoryStick } from "@lucide/svelte";
 
   let { memory }: {
@@ -19,7 +21,7 @@
     <div class="space-y-2">
       <div class="flex justify-between text-sm mb-1">
         <span class="text-gray-600 dark:text-gray-400">{$t("usage")}</span>
-        <span class="font-mono font-bold text-lg">{formatPercent(memory.percent)}</span>
+        <span class="font-mono font-bold text-lg"><AnimatedNumber value={memory.percent} suffix="%" /></span>
       </div>
       <ProgressBar value={memory.percent} color={memory.percent > 80 ? "bg-red-500" : memory.percent > 50 ? "bg-yellow-500" : "bg-purple-500"} />
       <div class="grid grid-cols-3 gap-2 text-xs mt-3">
@@ -43,6 +45,13 @@
       {/if}
     </div>
   {:else}
-    <p class="text-sm text-gray-400">{$t("loading")}</p>
+    <div class="space-y-3">
+      <Skeleton class="h-5 w-full" />
+      <div class="grid grid-cols-3 gap-2">
+        {#each Array(3) as _}
+          <Skeleton class="h-12 w-full" variant="rect" />
+        {/each}
+      </div>
+    </div>
   {/if}
 </Card>

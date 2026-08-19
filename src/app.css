@@ -62,10 +62,68 @@ input[type="number"] {
   50% { opacity: 0.7; }
 }
 
+@keyframes progress-glow {
+  0%, 100% { filter: brightness(1) drop-shadow(0 0 2px rgba(255,255,255,0.3)); }
+  50% { filter: brightness(1.15) drop-shadow(0 0 4px rgba(255,255,255,0.5)); }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes unsaved-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .animate-glow {
   animation: glow 2s ease-in-out infinite;
 }
 
 .animate-pulse-soft {
   animation: pulse-soft 2s ease-in-out infinite;
+}
+
+.animate-progress-glow {
+  animation: progress-glow 2s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.3s ease-out both;
+}
+
+.animate-unsaved-pulse {
+  animation: unsaved-pulse 1.5s ease-in-out infinite;
+}
+
+.theme-transitioning * {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .hover\:scale-\[1\.02\]:hover,
+  .hover\:scale-105:hover,
+  .active\:scale-95:active,
+  .active\:scale-\[0\.98\]:active {
+    transform: none !important;
+  }
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-energy-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.dark *:focus-visible {
+  outline-color: var(--color-energy-400);
+  outline-offset: 2px;
 }

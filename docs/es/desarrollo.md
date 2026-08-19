@@ -1,63 +1,51 @@
-# 💻 Guía de Desarrollo — EnergyPy
+# EnergyPy — Desarrollo
 
-> **Índice de docs:** [README](../README.md) · [Instalación](instalacion.md) · [Uso](uso.md) · [Arquitectura](arquitectura.md) · [Configuración](configuracion.md)
+Configuración del entorno de desarrollo, compilación y contribución.
 
 ---
 
-## Prerrequisitos
+## Requisitos
 
-| Herramienta | Versión mínima | Notas |
+| Herramienta | Versión mínima | Verificar |
 |---|---|---|
-| [Node.js](https://nodejs.org) | 20+ | Incluye npm |
-| [Rust](https://www.rust-lang.org/tools/install) | 1.77+ | Instala vía `rustup` |
+| Node.js | 20+ | `node --version` |
+| npm | 9+ | `npm --version` |
+| Rust | 1.77+ (stable) | `rustc --version` |
+| Cargo | Latest | `cargo --version` |
 
-### Dependencias por sistema operativo
+### Dependencias del sistema
 
-**Windows**
-- Opción A (recomendada): [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) con la carga de trabajo *"Desktop development with C++"*.
-- Opción B: MSYS2 + MinGW-w64 (toolchain GNU), como se usa en este proyecto:
-  ```
-  rustup default stable-x86_64-pc-windows-gnu
-  ```
-  y asegúrate de que `C:\msys64\mingw64\bin` esté en el `PATH`.
+**Windows:**
+- Visual Studio Build Tools 2022 (componente "Trabajo de desarrollo de C++")
+- WebView2 Runtime (incluido en Windows 10/11 actualizado)
 
-> ⚠️ **Nota (Windows GNU):** este repositorio viene preparado para la
-> toolchain GNU. El enlazador de MinGW (`ld`) desborda la tabla de exportación
-> PE (error *"export ordinal too large"*) al compilar la `cdylib` de Tauri en
-> debug; por eso `[profile.dev] opt-level = 2` está configurado en
-> `src-tauri/Cargo.toml`. No elimines ese ajuste si compilas con GNU.
-
-**Linux (Debian/Ubuntu)**
+**Linux (Ubuntu/Debian):**
 ```bash
-sudo apt update
-sudo apt install libwebkit2gtk-4.1-dev \
-  build-essential \
-  curl \
-  wget \
-  file \
-  libxdo-dev \
-  libssl-dev \
-  libayatana-appindicator3-dev \
-  librsvg2-dev
+sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget \
+  file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
 ```
 
-**macOS**
+**Linux (Fedora):**
+```bash
+sudo dnf groupinstall "Development Tools"
+sudo dnf install webkit2gtk4.1-devel openssl-devel curl wget file \
+  libappindicator-gtk3-devel librsvg2-devel
+```
+
+**macOS:**
 ```bash
 xcode-select --install
-brew install webkit2gtk  # si es necesario
 ```
 
 ---
 
-## Configuración del proyecto
+## Inicio rápido
 
 ```bash
-# Clonar el repositorio
-git clone <tu-repo>/EnergyPy.git
+git clone https://github.com/RafaelSanguinoAriza/EnergyPy.git
 cd EnergyPy
-
-# Instalar dependencias
 npm install
+npm run tauri dev
 ```
 
 ---
@@ -66,142 +54,171 @@ npm install
 
 | Comando | Descripción |
 |---|---|
-| `npm run dev` | Servidor de desarrollo Vite (solo frontend) |
-| `npm run tauri dev` | Desarrollo completo: frontend + ventana nativa con recarga en caliente |
-| `npm run build` | Compilación del frontend de producción |
-| `npm run check` | Verificación de tipos (svelte-check + TypeScript) |
-| `npm test` | Tests unitarios del frontend (Vitest) |
-| `cargo test` | Tests del backend Rust (ejecutar en `src-tauri/`) |
-| `npm run tauri build` | Compilación de instaladores de producción |
-| `npm run tauri icon` | Regenera los iconos de la app desde un PNG fuente |
-
----
-
-## Testing
-
-```bash
-npm test                 # Frontend: Vitest (tests/formatters.test.ts)
-cargo test               # Backend: ejecutar dentro de src-tauri/
-```
-
-- Frontend: cubre las utilidades de formato (`formatBytes`, `formatUptime`,
-  `formatTimeRemaining`, `formatDurationShort`, etc.).
-- Backend: cubre la lógica de programación (`seconds_until`), la serialización
-  de `ActionType` en lowercase y la detección de admin en `power_manager.rs`.
+| `npm install` | Instalar dependencias del frontend |
+| `npm run check` | Verificación de tipos TypeScript + Svelte |
+| `npm run check:watch` | Verificación en modo watch |
+| `npm test` | Ejecutar tests unitarios del frontend (Vitest) |
+| `npm run test:ui` | Interfaz web de Vitest |
+| `npm run tauri dev` | Servidor de desarrollo con recarga en caliente |
+| `npm run tauri build` | Compilar versiones de producción |
+| `cargo test` | Ejecutar tests del backend (en `src-tauri/`) |
 
 ---
 
 ## Estructura del proyecto
 
 ```
-EnergyPy/
+EnergyPy_V2.0/
 ├── src/                          # Frontend SvelteKit
-│   ├── app.css                   # Tailwind CSS v4 + tema personalizado
-│   ├── app.html                  # Plantilla HTML
+│   ├── routes/                   # Páginas (routing basado en archivos)
+│   │   ├── +layout.svelte        # Layout global: sidebar, header, transiciones, toast
+│   │   ├── +layout.server.ts     # Server load: language from system settings
+│   │   ├── +page.server.ts       # Redirect: / → /dashboard
+│   │   ├── dashboard/
+│   │   │   └── +page.svelte      # Bento grid: CPU, Memory, Disk, Network, SystemInfo, HealthBar, ProcessList
+│   │   ├── processes/
+│   │   │   └── +page.svelte      # Process manager: table with search, sort, kill
+│   │   ├── power/
+│   │   │   └── +page.svelte      # Power control: scheduling + manual execution
+│   │   └── settings/
+│   │       └── +page.svelte      # Settings: language, theme, notifications, autostart, refresh rate, about
 │   ├── lib/
 │   │   ├── components/
-│   │   │   ├── dashboard/        # Tarjetas de monitoreo
-│   │   │   ├── power/            # Formulario + countdown
-│   │   │   ├── sidebar/          # Navegación
-│   │   │   ├── theme/            # Selector de tema
-│   │   │   └── ui/               # Componentes base (Card, Button, etc.)
-│   │   ├── i18n/                 # Traducciones (en.json, es.json)
-│   │   ├── stores/               # Stores de Svelte
-│   │   ├── formatters.ts         # Utilidades de formato
-│   │   ├── tauri.ts              # Wrappers de comandos Tauri
-│   │   └── update.ts             # Utilidad de actualización
-│   └── routes/                   # Páginas (dashboard, power, settings)
-├── src-tauri/                    # Backend Rust
+│   │   │   ├── dashboard/        # Dashboard components
+│   │   │   │   ├── CpuCard.svelte
+│   │   │   │   ├── MemoryCard.svelte
+│   │   │   │   ├── DiskCard.svelte
+│   │   │   │   ├── NetworkCard.svelte
+│   │   │   │   ├── SystemInfoCard.svelte
+│   │   │   │   ├── SystemHealthBar.svelte
+│   │   │   │   └── ProcessList.svelte
+│   │   │   ├── processes/
+│   │   │   │   └── ProcessTable.svelte
+│   │   │   ├── power/
+│   │   │   │   └── ActionForm.svelte
+│   │   │   └── ui/               # Componentes reutilizables
+│   │   │       ├── Button.svelte
+│   │   │       ├── Card.svelte
+│   │   │       ├── Input.svelte
+│   │   │       ├── Select.svelte
+│   │   │       ├── Slider.svelte
+│   │   │       ├── Badge.svelte
+│   │   │       ├── Tooltip.svelte
+│   │   │       ├── Sidebar.svelte
+│   │   │       ├── Header.svelte
+│   │   │       ├── Progress.svelte
+│   │   │       ├── Skeleton.svelte
+│   │   │       ├── SkeletonCard.svelte
+│   │   │       ├── Toast.svelte
+│   │   │       ├── SystemLogo.svelte
+│   │   │       ├── SystemLogoFavicon.svelte
+│   │   │       └── EnergyPyLogo.svelte
+│   │   ├── i18n/                 # Internacionalización
+│   │   │   ├── en.json
+│   │   │   └── es.json
+│   │   ├── stores/               # Estado global (Svelte 5 runes)
+│   │   │   ├── config.ts         # AppConfig — language, theme, notifications, start_minimized, tray_enabled, auto_start, refresh_rate
+│   │   │   ├── language.ts       # Current language + translations
+│   │   │   ├── system.ts         # System data: CpuInfo, MemoryInfo, DiskInfo, NetworkInfo, BatteryInfo, ProcessInfo
+│   │   │   ├── power.ts          # Power state: is_timer_running, timer_action, timer_total_seconds, timer_remaining_seconds
+│   │   │   └── toast.ts          # Toast notifications: success, error, warning, info
+│   │   ├── tauri.ts              # Wrapper functions for Tauri IPC invoke
+│   │   └── constants.ts          # Route constants
+│   └── app.html                  # HTML shell
+├── src-tauri/                    # Backend Rust (Tauri)
+│   ├── Cargo.toml                # Rust dependencies + metadata (v2.0.1)
+│   ├── tauri.conf.json           # Tauri configuration (v2.0.1)
 │   ├── src/
-│   │   ├── lib.rs                # Entry point, estado, bandeja, threads
-│   │   ├── system_monitor.rs     # Monitoreo de sistema (sysinfo)
-│   │   ├── power_manager.rs      # Programación de acciones de energía
-│   │   └── config.rs             # Persistencia de configuración
-│   ├── icons/                    # Iconos generados
-│   ├── capabilities/             # Permisos de la app
-│   ├── Cargo.toml                # Dependencias Rust
-│   └── tauri.conf.json           # Configuración de Tauri
-├── docs/                         # Documentación (es/en)
-├── static/                       # Assets estáticos
-├── package.json
-└── README.md
+│   │   ├── lib.rs                # Tauri setup + IPC commands + app setup + COM STA init (Windows)
+│   │   ├── system_monitor.rs     # sysinfo: CPU (with temperature via Components), Memory, Disk, Network, Battery, Processes
+│   │   ├── power_manager.rs      # Power actions: shutdown, restart, suspend, hibernate, lock (cross-platform)
+│   │   └── config.rs             # AppConfig persistence (JSON file in app config dir)
+│   └── icons/                    # App icons
+├── tests/                        # Tests unitarios
+│   └── formatters.test.ts        # Tests de formateo de datos del sistema
+├── docs/                         # Documentación profesional
+│   ├── en/                       # English documentation
+│   │   ├── README.md
+│   │   ├── installation.md
+│   │   ├── usage.md
+│   │   ├── development.md
+│   │   ├── architecture.md
+│   │   └── configuration.md
+│   └── es/                       # Documentación en español
+│       ├── README.md
+│       ├── instalacion.md
+│       ├── uso.md
+│       ├── desarrollo.md
+│       ├── arquitectura.md
+│       └── configuracion.md
+├── README.md                     # Main README
+├── CHANGELOG.md                  # Changelog (v2.0.1)
+├── LICENSE                       # MIT License
+└── package.json                  # npm scripts + dependencies
 ```
 
 ---
 
-## Flujo de trabajo típico
+## Debugging
 
-1. **Modifica el frontend** en `src/` — los cambios se reflejan al instante con `tauri dev`.
-2. **Modifica el backend** en `src-tauri/src/` — Tauri recompila el binario automáticamente.
-3. **Añade un comando nuevo**:
-   - En Rust: `#[tauri::command] fn mi_comando() { ... }` y agrégalo al `invoke_handler` en `lib.rs`.
-   - En TS: añade un wrapper en `src/lib/tauri.ts` usando `invoke("mi_comando", args)`.
-   - **Nota:** Tauri v2 convierte `snake_case` a `camelCase` en los argumentos (ej. `action_type` → `actionType`).
-4. **Verifica tipos:** `npm run check`.
-5. **Compila:** `npm run tauri build`.
+### Frontend (SvelteKit)
 
----
+- El servidor de desarrollo se ejecuta en `http://localhost:5173/`.
+- Usa las DevTools del navegador para inspeccionar el frontend.
+- Los logs de Tauri se muestran en la terminal donde ejecutas `npm run tauri dev`.
 
-## Agregar un idioma nuevo
+### Backend (Rust)
 
-1. Crea `src/lib/i18n/xx.json` con las mismas claves que `en.json`.
-2. En `src/lib/i18n/index.ts`:
-   - Importa el archivo: `import xx from "./xx.json";`
-   - Añádelo al `Record`: `const translations = { en, es, xx };`
-   - Añade el idioma a `availableLanguages`.
-3. Agrega la traducción de todos los textos de la app.
+- Los logs se escriben en `logs/energy_py.log` (modo desarrollo) o en el directorio de configuración (modo producción).
+- Nivel de log: `Debug` en desarrollo, `Info` en producción.
+- Usa `RUST_LOG=debug npm run tauri dev` para logs detallados.
 
----
+### Tests
 
-## Sistema de logging
+```bash
+# Frontend
+npm test
 
-La app usa `log` + `simplelog`. Los logs se escriben a un archivo:
-- **Windows**: `%APPDATA%\EnergyPy\energypy.log`
-- **Linux**: `~/.config/EnergyPy/energypy.log`
-- **macOS**: `~/Library/Application Support/EnergyPy/energypy.log`
-
-Para añadir logging en Rust:
-```rust
-log::info!("mensaje");
-log::warn!("advertencia");
-log::error!("error");
+# Backend (desde src-tauri/)
+cargo test
 ```
 
 ---
 
-## Compilación de producción
+## Compilación para producción
 
 ```bash
 npm run tauri build
 ```
 
-### Salidas (Windows)
+Los instaladores quedan en `src-tauri/target/release/bundle/`:
+- **Windows:** `nsis/` (instalador NSIS) o `msi/` (instalador MSI)
+- **Linux:** `deb/` (paquete Debian) o `appimage/` (AppImage)
+- **macOS:** `dmg/` (imagen de disco)
 
-| Formato | Ruta |
-|---|---|
-| Ejecutable | `src-tauri/target/release/energypy_v20.exe` |
-| MSI | `src-tauri/target/release/bundle/msi/EnergyPy_2.0.0_x64_en-US.msi` |
-| NSIS | `src-tauri/target/release/bundle/nsis/EnergyPy_2.0.0_x64-setup.exe` |
+### Zip portátil (Windows)
 
-### Regenerar iconos
+Tras compilar con `npm run tauri build`:
 
-```bash
-npm run tauri icon <archivo-png-1024x1024>
+```powershell
+New-Item -ItemType Directory -Path dist\EnergyPy -Force
+Copy-Item src-tauri\target\release\energypy_v20.exe, src-tauri\target\release\WebView2Loader.dll dist\EnergyPy\
+Compress-Archive -Path dist\EnergyPy -DestinationPath dist\EnergyPy_2.0.1_x64_portable.zip
+Remove-Item dist\EnergyPy -Recurse -Force
 ```
 
 ---
 
-## Publicación y seguridad
+## Convenciones de código
 
-Antes de publicar el repositorio o un release:
-
-1. Sustituye `YOUR_GITHUB_USER` por el usuario real (`RafaelSanguinoAriza`) en
-   `src-tauri/tauri.conf.json` (campo `plugins.updater.endpoints`).
-2. Configura los secretos de GitHub `TAURI_SIGNING_PRIVATE_KEY` y
-   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (ver `.github/workflows/release.yml`).
-3. Revisa [SECURITY.md](../../SECURITY.md) — el archivo `.updater-key`
-   (clave privada) no debe publicarse jamás y ya está excluido en `.gitignore`.
+- **Componentes:** PascalCase (`CpuCard.svelte`)
+- **Stores:** camelCase (`system.ts` → `systemStore`)
+- **Funciones IPC:** snake_case en Rust (`get_system_stats`), camelCase en TypeScript (`getSystemStats`)
+- **Estilos:** Tailwind CSS con theme personalizado
+- **Tests:** Vitest con describe/it blocks en inglés
 
 ---
 
-[← Uso](uso.md) · [Siguiente: Arquitectura →](arquitectura.md)
+## Changelog
+
+Consulta [CHANGELOG.md](../../CHANGELOG.md) para ver los cambios recientes.

@@ -10,15 +10,15 @@ Professional technical documentation for the EnergyPy application.
 
 ---
 
-## 📑 Document index
+## Document index
 
 | Document | Description |
 |---|---|
-| [🛠️ Installation](installation.md) | Requirements, installation and running per OS |
-| [🚀 Usage](usage.md) | Complete guide to every application feature |
-| [💻 Development](development.md) | Environment setup, building and contributing |
-| [🏗️ Architecture](architecture.md) | Internal design: frontend, backend and IPC |
-| [⚙️ Configuration](configuration.md) | Configuration options and files reference |
+| [Installation](installation.md) | Requirements, installation and running per OS |
+| [Usage](usage.md) | Complete guide to every application feature |
+| [Development](development.md) | Environment setup, building and contributing |
+| [Architecture](architecture.md) | Internal design: frontend, backend and IPC |
+| [Configuration](configuration.md) | Configuration options and files reference |
 
 ---
 
@@ -26,8 +26,9 @@ Professional technical documentation for the EnergyPy application.
 
 EnergyPy is a **cross-platform** (Windows, macOS, Linux) desktop application combining two main functions:
 
-1. **Real-time system monitoring** — CPU, memory, disk, network, battery and processes.
+1. **Real-time system monitoring** — CPU (with temperature), memory, disk, network, battery and processes.
 2. **Power control** — Scheduling of shutdown, restart, suspend, hibernate and lock actions.
+3. **Process manager** — Search, sort, view extended info, and terminate running processes.
 
 It is built with **Tauri v2** (Rust backend) and **SvelteKit 5** (TypeScript frontend), producing a small binary (~22 MB) with minimal resource usage.
 

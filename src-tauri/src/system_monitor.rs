@@ -1,7 +1,7 @@
 use serde::Serialize;
 use std::collections::HashMap;
 use std::process::{Command, Stdio};
-use sysinfo::{CpuRefreshKind, Disks, Networks, System, MemoryRefreshKind, RefreshKind};
+use sysinfo::{CpuRefreshKind, Disks, Networks, System, MemoryRefreshKind, RefreshKind, Components};
 
 fn run_silent_output(cmd: &str, args: &[&str]) -> Option<std::process::Output> {
     #[cfg(target_os = "windows")]
@@ -32,6 +32,7 @@ pub struct CpuInfo {
     pub cores: Vec<f32>,
     pub frequency: u64,
     pub name: String,
+    pub temperature: Option<f32>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -52,6 +53,9 @@ pub struct DiskInfo {
     pub used: u64,
     pub available: u64,
     pub percent: f32,
+    pub file_system: String,
+    pub is_removable: bool,
+    pub is_read_only: bool,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -77,6 +81,10 @@ pub struct ProcessInfo {
     pub cpu: f32,
     pub memory: u64,
     pub memory_percent: f32,
+    pub exe: String,
+    pub start_time: u64,
+    pub disk_read: u64,
+    pub disk_write: u64,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -98,11 +106,54 @@ pub struct SystemMonitor {
     system: System,
     disks: Disks,
     networks: Networks,
+    components: Components,
     prev_net_rx: HashMap<String, u64>,
     prev_net_tx: HashMap<String, u64>,
 }
 
 impl SystemMonitor {
+    pub fn kill_process(pid: u32) -> Result<(), String> {
+        #[cfg(target_os = "windows")]
+        {
+            let output = std::process::Command::new("taskkill")
+                .args(["/PID", &pid.to_string(), "/F"])
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+                .output()
+                .map_err(|e| format!("Failed to run taskkill: {e}"))?;
+            if output.status.success() {
+                Ok(())
+            } else {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Err(format!("Failed to kill process {pid}: {stderr}"))
+            }
+        }
+        #[cfg(target_os = "linux")]
+        {
+            unsafe {
+                if libc::kill(pid as i32, libc::SIGKILL) == 0 {
+                    Ok(())
+                } else {
+                    Err(format!("Failed to kill process {pid}: {}", std::io::Error::last_os_error()))
+                }
+            }
+        }
+        #[cfg(target_os = "macos")]
+        {
+            unsafe {
+                if libc::kill(pid as i32, libc::SIGKILL) == 0 {
+                    Ok(())
+                } else {
+                    Err(format!("Failed to kill process {pid}: {}", std::io::Error::last_os_error()))
+                }
+            }
+        }
+        #[cfg(not(any(target_os = "windows", target_os = "linux", target_os = "macos")))]
+        {
+            Err("Kill process not supported on this platform".to_string())
+        }
+    }
+
     pub fn new() -> Self {
         let mut system = System::new_with_specifics(
             RefreshKind::nothing()
@@ -114,6 +165,7 @@ impl SystemMonitor {
 
         let disks = Disks::new_with_refreshed_list();
         let networks = Networks::new_with_refreshed_list();
+        let components = Components::new_with_refreshed_list();
 
         let mut prev_net_rx = HashMap::new();
         let mut prev_net_tx = HashMap::new();
@@ -126,6 +178,7 @@ impl SystemMonitor {
             system,
             disks,
             networks,
+            components,
             prev_net_rx,
             prev_net_tx,
         }
@@ -136,6 +189,7 @@ impl SystemMonitor {
         self.system.refresh_memory();
         self.system.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
         self.disks.refresh(false);
+        self.components.refresh(true);
 
         self.prev_net_rx.clear();
         self.prev_net_tx.clear();
@@ -149,6 +203,19 @@ impl SystemMonitor {
     pub fn get_stats(&mut self) -> SystemStats {
         self.refresh();
 
+        let cpu_temp = self.components.iter()
+            .find(|c| {
+                let label = c.label().to_lowercase();
+                label.contains("cpu") || label.contains("processor") || label.contains("core")
+            })
+            .map(|c| c.temperature())
+            .flatten()
+            .or_else(|| {
+                self.components.iter()
+                    .find(|c| c.temperature().is_some())
+                    .and_then(|c| c.temperature())
+            });
+
         let cpu = CpuInfo {
             usage: self.system.global_cpu_usage(),
             cores: self.system.cpus().iter().map(|c| c.cpu_usage()).collect(),
@@ -159,6 +226,7 @@ impl SystemMonitor {
                 .first()
                 .map(|c| c.brand().to_string())
                 .unwrap_or_default(),
+            temperature: cpu_temp,
         };
 
         let memory = MemoryInfo {
@@ -208,6 +276,9 @@ impl SystemMonitor {
                     } else {
                         0.0
                     },
+                    file_system: d.file_system().to_string_lossy().to_string(),
+                    is_removable: d.is_removable(),
+                    is_read_only: d.is_read_only(),
                 }
             })
             .collect();
@@ -218,22 +289,29 @@ impl SystemMonitor {
             .system
             .processes()
             .iter()
-            .map(|(pid, p)| ProcessInfo {
-                pid: pid.as_u32(),
-                name: p.name().to_string_lossy().to_string(),
-                cpu: p.cpu_usage(),
-                memory: p.memory(),
-                memory_percent: if self.system.total_memory() > 0 {
-                    (p.memory() as f32 / self.system.total_memory() as f32) * 100.0
-                } else {
-                    0.0
-                },
+            .map(|(pid, p)| {
+                let disk_usage = p.disk_usage();
+                ProcessInfo {
+                    pid: pid.as_u32(),
+                    name: p.name().to_string_lossy().to_string(),
+                    cpu: p.cpu_usage(),
+                    memory: p.memory(),
+                    memory_percent: if self.system.total_memory() > 0 {
+                        (p.memory() as f32 / self.system.total_memory() as f32) * 100.0
+                    } else {
+                        0.0
+                    },
+                    exe: p.exe().map(|e| e.to_string_lossy().to_string()).unwrap_or_default(),
+                    start_time: p.start_time(),
+                    disk_read: disk_usage.read_bytes,
+                    disk_write: disk_usage.written_bytes,
+                }
             })
             .filter(|p| p.cpu > 0.0 || p.memory_percent > 0.0)
             .collect();
 
         top_processes.sort_by(|a, b| b.cpu.partial_cmp(&a.cpu).unwrap_or(std::cmp::Ordering::Equal));
-        top_processes.truncate(10);
+        top_processes.truncate(50);
 
         SystemStats {
             uptime_seconds: System::uptime(),

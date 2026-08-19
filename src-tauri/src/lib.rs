@@ -106,8 +106,25 @@ fn is_admin() -> bool {
     PowerManager::is_admin()
 }
 
+#[tauri::command]
+fn kill_process(pid: u32) -> Result<(), String> {
+    system_monitor::SystemMonitor::kill_process(pid)
+}
+
+#[cfg(target_os = "windows")]
+extern "system" {
+    fn CoInitializeEx(pvReserved: *mut std::ffi::c_void, dwCoInit: u32) -> i32;
+}
+
+const COINIT_APARTMENTTHREADED: u32 = 0x2;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "windows")]
+    unsafe {
+        let _ = CoInitializeEx(std::ptr::null_mut(), COINIT_APARTMENTTHREADED);
+    }
+
     init_logger();
     info!("EnergyPy started");
 
@@ -144,6 +161,7 @@ pub fn run() {
             save_config,
             exit_app,
             is_admin,
+            kill_process,
         ])
         .setup(|app| {
             let show_item = MenuItemBuilder::with_id("show", "Show EnergyPy").build(app)?;
@@ -208,11 +226,15 @@ pub fn run() {
             let app_handle = app.handle().clone();
             std::thread::spawn(move || {
                 loop {
+                    let rate = {
+                        let cfg = config::load_config();
+                        cfg.refresh_rate.clamp(1, 10)
+                    };
                     if let Some(state) = app_handle.try_state::<AppState>() {
                         let stats = state.monitor.lock().unwrap().get_stats();
                         let _ = app_handle.emit("system-stats", &stats);
                     }
-                    std::thread::sleep(std::time::Duration::from_secs(2));
+                    std::thread::sleep(std::time::Duration::from_secs(rate));
                 }
             });
 

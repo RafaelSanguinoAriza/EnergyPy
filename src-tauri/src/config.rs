@@ -11,6 +11,8 @@ pub struct AppConfig {
     pub minimize_to_tray: bool,
     pub start_minimized: bool,
     pub auto_update: bool,
+    pub auto_start: bool,
+    pub refresh_rate: u64,
     pub last_tab: String,
 }
 
@@ -23,6 +25,8 @@ impl Default for AppConfig {
             minimize_to_tray: true,
             start_minimized: false,
             auto_update: true,
+            auto_start: false,
+            refresh_rate: 2,
             last_tab: "dashboard".to_string(),
         }
     }
@@ -67,6 +71,8 @@ pub fn load_config() -> AppConfig {
                             config.minimize_to_tray = obj.get("minimize_to_tray").and_then(|v| v.as_bool()).unwrap_or(config.minimize_to_tray);
                             config.start_minimized = obj.get("start_minimized").and_then(|v| v.as_bool()).unwrap_or(config.start_minimized);
                             config.auto_update = obj.get("auto_update").and_then(|v| v.as_bool()).unwrap_or(config.auto_update);
+                            config.auto_start = obj.get("auto_start").and_then(|v| v.as_bool()).unwrap_or(config.auto_start);
+                            config.refresh_rate = obj.get("refresh_rate").and_then(|v| v.as_u64()).unwrap_or(config.refresh_rate);
                             config.last_tab = obj.get("last_tab").and_then(|v| v.as_str()).unwrap_or(&config.last_tab).to_string();
                         }
                     }

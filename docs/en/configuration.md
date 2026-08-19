@@ -1,115 +1,185 @@
-# ⚙️ Configuration — EnergyPy
+# EnergyPy — Configuration
 
-> **Docs index:** [README](../README.md) · [Installation](installation.md) · [Usage](usage.md) · [Development](development.md) · [Architecture](architecture.md)
+Detailed reference for configuration options and system files.
 
 ---
 
 ## Configuration file
 
-EnergyPy stores its preferences in a JSON file. Location per OS:
+Configuration is stored in a JSON file in the system's config directory:
 
-| System | Path |
+| System | Location |
 |---|---|
-| **Windows** | `%APPDATA%\EnergyPy\config.json` |
+| **Windows** | `%APPDATA%/EnergyPy/config.json` |
 | **Linux** | `~/.config/EnergyPy/config.json` |
 | **macOS** | `~/Library/Application Support/EnergyPy/config.json` |
 
-Configuration is loaded automatically on startup and saved when pressing **"Save settings"** in the Settings section.
-
 ---
 
-## Options
-
-### `theme`
-Interface theme.
-
-| Value | Effect |
-|---|---|
-| `"light"` | Light theme |
-| `"dark"` | Dark theme |
-| `"system"` | Follows the OS (default) |
+## Configuration options
 
 ### `language`
-Interface language.
 
-| Value | Effect |
-|---|---|
-| `"en"` | English |
-| `"es"` | Spanish |
+- **Type:** `string`
+- **Values:** `"en"` (English), `"es"` (Español)
+- **Default:** Detected from the OS (`navigator.language`)
+- **Description:** User interface language.
 
-### `notifications_enabled`
-Boolean. Enables/disables system notifications.
+### `theme`
 
-### `minimize_to_tray`
-Boolean. When `true`, closing the window hides the app to the tray instead of exiting.
+- **Type:** `string`
+- **Values:** `"light"`, `"dark"`, `"system"`
+- **Default:** `"system"`
+- **Description:** Application visual theme. `"system"` follows the OS preference.
+
+### `notifications`
+
+- **Type:** `boolean`
+- **Default:** `true`
+- **Description:** Enables or disables system notifications (toast notifications).
 
 ### `start_minimized`
-Boolean. When `true`, the app starts hidden in the tray.
 
-### `auto_update`
-Boolean. When `true`, the app checks and applies updates automatically.
+- **Type:** `boolean`
+- **Default:** `false`
+- **Description:** When `true`, the application starts minimized in the system tray.
 
-### `last_tab`
-String. Last visited section (`"dashboard"`, `"power"`, `"settings"`).
+### `tray_enabled`
+
+- **Type:** `boolean`
+- **Default:** `true`
+- **Description:** When `true`, the application minimizes to the system tray when the window is closed.
+
+### `auto_start`
+
+- **Type:** `boolean`
+- **Default:** `false`
+- **Description:** When `true`, the application runs automatically when the OS boots. Uses the Tauri autostart plugin to register/unregister the app with the system.
+
+### `refresh_rate`
+
+- **Type:** `integer`
+- **Range:** 1 - 10
+- **Default:** `2`
+- **Unit:** Seconds
+- **Description:** Dashboard and system data update interval. Lower values provide more frequent updates but use more CPU.
 
 ---
 
-## Example file
+## Example configuration file
 
 ```json
 {
-  "theme": "system",
   "language": "es",
-  "notifications_enabled": true,
-  "minimize_to_tray": true,
+  "theme": "dark",
+  "notifications": true,
   "start_minimized": false,
-  "auto_update": true,
-  "last_tab": "dashboard"
+  "tray_enabled": true,
+  "auto_start": false,
+  "refresh_rate": 2
 }
 ```
 
 ---
 
-## Log file
+## Default configuration
 
-The activity log (`energypy.log`) lives in the same directory as `config.json`:
+If the configuration file doesn't exist or is corrupted, the default configuration is used:
 
-| System | Path |
+```json
+{
+  "language": "system",
+  "theme": "system",
+  "notifications": true,
+  "start_minimized": false,
+  "tray_enabled": true,
+  "auto_start": false,
+  "refresh_rate": 2
+}
+```
+
+---
+
+## Build parameters
+
+### `Cargo.toml` (Backend)
+
+| Field | Value |
 |---|---|
-| **Windows** | `%APPDATA%\EnergyPy\energypy.log` |
-| **Linux** | `~/.config/EnergyPy/energypy.log` |
-| **macOS** | `~/Library/Application Support/EnergyPy/energypy.log` |
+| `name` | `energypy` |
+| `version` | `2.0.1` |
+| `description` | "Cross-platform desktop power and system monitor" |
+| `authors` | `["Rafael David Sanguino Ariza"]` |
+| `edition` | `2021` |
 
----
+### `tauri.conf.json`
 
-## Packaging configuration (`tauri.conf.json`)
-
-File at `src-tauri/tauri.conf.json`:
-
-| Key | Description |
+| Field | Value |
 |---|---|
-| `productName` | Product name (`EnergyPy`) |
-| `version` | App version (`2.0.0`) |
-| `identifier` | Unique identifier (`com.energypy.desktop`) |
-| `app.windows` | Window configuration (size, title, centering) |
-| `bundle.icon` | Per-platform icons |
-| `plugins.updater` | Update endpoint and public key |
+| `identifier` | `com.energypy.app` |
+| `productName` | `EnergyPy` |
+| `version` | `2.0.1` |
+| `title` | `⚡ EnergyPy v2.0.1` |
+| `width` | `1100` |
+| `height` | `750` |
+| `minWidth` | `900` |
+| `minHeight` | `600` |
+| `decorations` | `true` |
+| `transparent` | `false` |
+| `resizable` | `true` |
+| `fullscreen` | `false` |
+| `log level` | `debug` (dev) / `info` (prod) |
+
+### `package.json` (Frontend)
+
+| Field | Value |
+|---|---|
+| `name` | `energypy-v2` |
+| `version` | `2.0.1` |
+| `description` | "Cross-platform desktop power and system monitor" |
+| `svelte` | `^5.35.5` |
+| `@tauri-apps/api` | `^2.8.0` |
+| `@tauri-apps/plugin-autostart` | `^2.5.0` |
+| `@tauri-apps/plugin-shell` | `^2.3.0` |
+| `lucide-svelte` | `^0.544.0` |
+| `tailwindcss` | `^4.1.13` |
 
 ---
 
-## Permissions (`capabilities/default.json`)
+## Logs
 
-Defines app permissions for each Tauri plugin:
+| System | Location |
+|---|---|
+| **Development** | `logs/energy_py.log` |
+| **Production** | System config directory |
 
-- **opener**: open URLs in the external browser.
-- **notification**: send notifications.
-- **shell**: run commands / open files.
-- **autostart**: start with the system.
-- **process**: exit / restart the process.
-- **dialog**: native dialogs (confirmation).
-- **updater**: check and download updates.
-- **core:event**: subscribe to events (stats, countdown).
+### Log level
+
+- **Development:** `Debug` (everything included)
+- **Production:** `Info` (information and errors only)
+
+### Configuring log level
+
+```bash
+# Verbose debug
+RUST_LOG=debug npm run tauri dev
+
+# Errors only
+RUST_LOG=error npm run tauri dev
+```
 
 ---
 
-[← Architecture](architecture.md) · [Back to index](../README.md)
+## Keyboard shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+C` | Cancel active power timer |
+| `Ctrl+T` | Toggle theme (light / dark / system) |
+| `Ctrl+Q` | Exit application |
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](../../CHANGELOG.md) for recent changes.

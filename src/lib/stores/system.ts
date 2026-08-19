@@ -5,6 +5,7 @@ export interface CpuInfo {
   cores: number[];
   frequency: number;
   name: string;
+  temperature: number | null;
 }
 
 export interface MemoryInfo {
@@ -23,6 +24,9 @@ export interface DiskInfo {
   used: number;
   available: number;
   percent: number;
+  file_system: string;
+  is_removable: boolean;
+  is_read_only: boolean;
 }
 
 export interface NetworkInfo {
@@ -45,6 +49,10 @@ export interface ProcessInfo {
   cpu: number;
   memory: number;
   memory_percent: number;
+  exe: string;
+  start_time: number;
+  disk_read: number;
+  disk_write: number;
 }
 
 export interface SystemStats {

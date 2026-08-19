@@ -1,16 +1,44 @@
 # Changelog
 
-## [Unreleased] - 2026-08-16
+## [2.0.1] - 2026-08-17
 
 ### Added
-- **KPI strip** — new `SystemHealthBar` on the dashboard showing compact CPU, memory, disk, and battery readouts with color-coded progress bars and "—" placeholders when data is unavailable.
-- **System info card** — new `SystemInfoCard` on the dashboard showing OS, kernel, hostname, architecture, and uptime; backend now reports `arch` (`SystemStats.arch`).
+- **Process Manager** — new `/processes` route with a full-featured process table: search by name/PID, column sort (name, CPU%, memory, Mem%), per-process kill with confirmation dialog, kill-all-filtered button, and 50-process limit (increased from 10).
+- **Extended process info** — process table now shows executable path, process uptime, and disk read/write bytes.
+- **CPU temperature** — `CpuCard` displays real-time temperature via `sysinfo::Components` with color thresholds (green < 65°C, yellow < 85°C, red ≥ 85°C).
+- **Auto-start with system** — new `auto_start` config option in Settings; uses `tauri-plugin-autostart` to register/unregister OS-level autostart.
+- **Configurable refresh rate** — new `refresh_rate` config option (1–10 s, default 2 s); the backend stats emission thread reads the value dynamically.
+- **Skeleton loaders** — all dashboard cards (`CpuCard`, `MemoryCard`, `DiskCard`, `NetworkCard`, `SystemInfoCard`, `SystemHealthBar`) and `ProcessTable` show shimmer-animated skeletons instead of "Loading..." text while data is unavailable.
+- **Toast notifications** — reusable toast system (`toast.ts` store + `Toast.svelte` component) with success/error/warning/info variants, auto-dismiss, and close button; integrated in the root layout and shown on settings save/reset and errors.
+- **About section in Settings** — displays app description, version, license, and a clickable link to the author's GitHub profile.
+- **Bidirectional page transitions** — navigation between tabs uses `in:fly`/`out:fly` (left/right) for a natural directional feel.
 
 ### Changed
-- **Dashboard layout** — reflowed grid: KPI strip on top; row 2 = Disk (2 cols) + Network + Battery; row 3 = Uptime + System; row 4 = top processes full width.
-- **Dark theme palette** — replaced pure-gray dark mode with a slate blue-gray palette (`slate-900` background, `slate-800` cards, `slate-700` surfaces, `slate-600` tracks/borders) across all components and pages.
-- **Number inputs** — native spinner arrows hidden via CSS (`appearance: none` / `::-webkit-inner-spin-button`) while keeping `type="number"` validation.
-- **Installer branding** — `bundle` metadata added (`publisher`, `category`, `shortDescription`, `longDescription`, `copyright`); custom NSIS header/sidebar images and MSI banner/dialog images (generated in `src-tauri/bundle-images/`); NSIS installer now bilingual (English + Spanish with language selector) and installs per-user (`currentUser`).
+- **Dashboard bento grid** — reorganized layout: CPU (3 cols) + SystemInfo (1 col) on row 1; Memory (2 cols) + Network (2 cols) on row 2; Disk (2 cols) + SystemHealthBar (2 cols) on row 3; ProcessList (4 cols, compact 5 processes with "View all →" link) on row 4.
+- **KPI strip** — new `SystemHealthBar` showing compact CPU, memory, disk, and battery readouts with color-coded progress bars.
+- **System info card** — `SystemInfoCard` now shows uptime prominently, plus OS, kernel, hostname, and architecture.
+- **Process row transitions** — table rows use `transition:fade` (120 ms) for smooth appear/disappear when filtering or sorting.
+- **Process table scroll** — fixed-height scroll container (`max-h-[500px]`) with sticky thead and custom scrollbar styling.
+- **Dark theme palette** — pure-gray dark mode replaced with slate blue-gray palette across all components.
+- **Number inputs** — native spinner arrows hidden via CSS while keeping `type="number"` validation.
+- **Installer branding** — `bundle` metadata, custom NSIS header/sidebar images, bilingual NSIS installer.
+- **Version** — bumped to 2.0.1 across package.json, Cargo.toml, and tauri.conf.json.
+- **Project metadata** — updated Cargo.toml description and authors; added description to package.json.
+
+### Fixed
+- **Windows COM panic** — `RPC_E_CHANGED_MODE` crash on startup caused by `tauri-plugin-notification` initializing COM in MTA mode before WebView2's STA requirement; fixed by calling `CoInitializeEx(COINIT_APARTMENTTHREADED)` before Tauri builder.
+- **Dark mode process table** — fixed `slate-750` (non-existent Tailwind class) → `slate-700`.
+- **Missing i18n keys** — added `about_description`, `author`, `github_profile`, `start_time` keys that were referenced in components but missing from translation files.
+- **Empty `handleScheduled`** — removed dead function from `power/+page.svelte`.
+
+### Removed
+- **`UptimeCard.svelte`** — consolidated into `SystemInfoCard`.
+- **`BatteryCard.svelte`** — battery info merged into `SystemHealthBar`.
+- **`cpuHistory` store** — removed dead store and chart.js dependency.
+
+## [Unreleased]
+
+_No unreleased changes beyond 2.0.1._
 
 ## [2.0.0] - 2026-06-14
 

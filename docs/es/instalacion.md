@@ -1,75 +1,78 @@
-# 🛠️ Guía de Instalación — EnergyPy
+# EnergyPy — Instalación
 
-> **Índice de docs:** [README](../README.md) · [Uso](uso.md) · [Desarrollo](desarrollo.md) · [Arquitectura](arquitectura.md) · [Configuración](configuracion.md)
+Guía de instalación para Windows, Linux y macOS.
 
 ---
 
-## Requisitos del sistema
+## Requisitos previos
 
-| Sistema Operativo | Requisitos mínimos |
-|---|---|
-| **Windows** | Windows 10/11 (64-bit) |
-| **macOS** | macOS 10.15+ (Catalina o superior) |
-| **Linux** | WebKitGTK 4.1, GTK 3 (distros basadas en Debian/Ubuntu, Fedora, Arch) |
-
-**Recursos:** ~30 MB de espacio en disco · 128 MB de RAM · cualquier CPU compatible con 64-bit.
+| Componente | Windows | Linux | macOS |
+|---|---|---|---|
+| Sistema operativo | Windows 10/11 (64-bit) | Ubuntu 22.04+ / Fedora 38+ | macOS 13 Ventura+ |
+| Runtime | WebView2 (incluido en Win 10/11 actualizado) | libwebkit2gtk | WebKit (incluido en macOS) |
+| RAM | 256 MB libres | 256 MB libres | 256 MB libres |
+| Disco | ~22 MB | ~22 MB | ~22 MB |
 
 ---
 
 ## Windows
 
-### Opción 1: Instalador MSI (recomendado)
-1. Descarga `EnergyPy_2.0.0_x64_en-US.msi` desde los Releases.
-2. Doble clic en el archivo y sigue el asistente.
-3. EnergyPy aparecerá en el menú Inicio y en el Escritorio.
+### Instalador NSIS (recomendado)
 
-### Opción 2: Instalador NSIS
-1. Descarga `EnergyPy_2.0.0_x64-setup.exe`.
-2. Ejecuta el instalador. Tendrás opciones de instalación por usuario o por sistema, y personalización de carpeta.
+1. Descarga `EnergyPy_2.0.1_x64-setup.exe` desde [GitHub Releases](https://github.com/RafaelSanguinoAriza/EnergyPy/releases).
+2. Ejecuta el instalador. No requiere permisos de administrador.
+3. La app se instala en `C:\Users\<tu_usuario>\AppData\Local\EnergyPy\`.
 
-### Opción 3: Portátil (sin instalación)
-1. Descarga el ejecutable `energypy_v20.exe`.
-2. Cópialo a la carpeta que prefieras (por ejemplo, una unidad USB).
-3. Ejecútalo directamente. No requiere permisos de administrador para ejecutarse (algunas acciones de energía podrían requerirlos).
+### Instalador MSI
 
----
+1. Descarga `EnergyPy_2.0.1_x64_en-US.msi` desde [GitHub Releases](https://github.com/RafaelSanguinoAriza/EnergyPy/releases).
+2. Ejecuta el MSI. Puede requerir permisos de administrador según tu configuración.
 
-## macOS
+### Versión portátil
 
-1. Descarga el paquete `.dmg` desde los Releases.
-2. Abre el archivo `.dmg` y arrastra EnergyPy a la carpeta **Aplicaciones**.
-3. Abre EnergyPy desde Launchpad o la carpeta Aplicaciones.
-4. Si macOS muestra una advertencia de "desarrollador no verificado", ve a **Preferencias del Sistema → Privacidad y seguridad** y haz clic en **Abrir de todos modos**.
+1. Descarga `EnergyPy_2.0.1_x64_portable.zip`.
+2. Extrae el zip a cualquier carpeta.
+3. Ejecuta `energypy_v20.exe` directamente.
+4. **Importante:** `WebView2Loader.dll` debe permanecer junto al `.exe`.
+
+> Si Windows SmartScreen muestra un aviso, haz clic en "Más información" y luego "Ejecutar de todas formas".
 
 ---
 
 ## Linux
 
-### Debian / Ubuntu (`.deb`)
+> **Estado:** Próximamente. Las builds de Linux estarán disponibles cuando se complete la implementación del daemon D-Bus para el control de energía.
+
+### Requisitos (próximamente)
+
 ```bash
-sudo dpkg -i EnergyPy_2.0.0_amd64.deb
-sudo apt-get install -f   # desinstala dependencias faltantes si las hay
+# Ubuntu/Debian
+sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev
+
+# Fedora
+sudo dnf install webkit2gtk4.1-devel libappindicator-gtk3-devel librsvg2-devel
 ```
 
-### AppImage
-```bash
-chmod +x EnergyPy_2.0.0.AppImage
-./EnergyPy_2.0.0.AppImage
-```
+---
 
-### Dependencias necesarias (Debian/Ubuntu)
+## macOS
+
+> **Estado:** Próximamente. Las builds de macOS estarán disponibles tras validar la integración con `pmset` y `launchd`.
+
+### Requisitos (próximamente)
+
 ```bash
-sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+# Homebrew
+brew install curl wget
 ```
 
 ---
 
 ## Verificación de la instalación
 
-1. Abre EnergyPy.
-2. Deberías ver el **Dashboard** con las estadísticas en vivo de tu sistema.
-3. Ve a **Configuración** y cambia el tema a oscuro como prueba.
-4. Cierra la ventana — debería minimizarse a la bandeja del sistema (si está habilitado).
+1. Abre EnergyPy desde el menú de inicio, el lanzador o la terminal.
+2. Navega por las pestañas: Dashboard, Procesos, Energía, Configuración.
+3. Verifica que los datos del sistema se actualizan correctamente.
 
 ---
 
@@ -77,11 +80,13 @@ sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchel
 
 | Problema | Solución |
 |---|---|
-| Reactivos acciones de energía requieren administrador | Ejecuta la app como administrador en Windows (clic derecho → "Ejecutar como administrador") |
-| La batería no se detecta en Linux | Verifica que exista `/sys/class/power_supply/BAT0` o `BAT1` |
-| No aparece la bandeja en Linux | Instala el paquete de indicadores de tu distribución (ej. `libayatana-appindicator`) |
-| La consola parpadea en Windows | Ya corregido en v2.0.0 — usa la última versión |
+| EnergyPy no inicia en Windows | Verifica que WebView2 esté instalado: [descarga WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) |
+| Pantalla blanca al iniciar | Actualiza los controladores de gráficos |
+| Alta CPU en Linux | Verifica que el daemon de energía esté disponible |
+| No se muestra la temperatura de CPU | Algunos sensores requieren permisos root en Linux |
 
 ---
 
-[← Índice](../README.md) · [Siguiente: Guía de Uso →](uso.md)
+## Siguiente paso
+
+- [Uso de la aplicación](uso.md) — Guía completa de cada función.

@@ -5,8 +5,6 @@
   import ScheduleForm from "$lib/components/power/ScheduleForm.svelte";
   import CountdownTimer from "$lib/components/power/CountdownTimer.svelte";
   import { Zap } from "@lucide/svelte";
-
-  function handleScheduled() {}
 </script>
 
 <div class="max-w-2xl mx-auto space-y-6">
@@ -25,7 +23,7 @@
   {#if !$scheduledAction.active}
     <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
       <h2 class="text-lg font-semibold mb-4">{$t("new_schedule")}</h2>
-      <ScheduleForm onScheduled={handleScheduled} />
+      <ScheduleForm onScheduled={() => {}} />
     </div>
   {/if}
 </div>

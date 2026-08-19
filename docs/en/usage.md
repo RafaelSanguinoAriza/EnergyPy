@@ -1,138 +1,136 @@
-# 🚀 Usage Guide — EnergyPy
+# EnergyPy — Usage
 
-> **Docs index:** [README](../README.md) · [Installation](installation.md) · [Development](development.md) · [Architecture](architecture.md) · [Configuration](configuration.md)
+Complete guide to every application feature.
 
 ---
 
 ## Navigation
 
-The app has a sidebar with three sections:
-
-- **Dashboard** — Real-time system monitoring
-- **Power Control** — Scheduling power actions
-- **Settings** — Application preferences
-
-On narrow windows the sidebar collapses to icons only.
-
----
-
-## 📊 Dashboard
-
-The dashboard shows cards with statistics that auto-refresh every **2 seconds**.
-
-### CPU
-- **Total usage** — overall processor percentage with a progress bar.
-- **Per-core** — individual bars for each core (C0, C1, ...).
-- **Frequency** — current frequency in GHz/MHz.
-- **Name** — processor model.
-
-> Colors indicate load: green (< 50%), yellow (50–80%), red (> 80%).
-
-### Memory (RAM)
-- Total usage with progress bar.
-- **Total / Used / Available** in a human-readable format (GB).
-- **Swap** — swap information when present.
-
-### Disk
-- One bar per partition/mounted drive.
-- **Used / Total** and **free space**.
-- Color thresholds: red > 85%, yellow > 60%.
-
-### Network
-- **Download (↓)** and **upload (↑)** speed per interface in bps/Kbps/Mbps/Gbps.
-- Shows the differential traffic between measurements (speed, not totals).
-
-### Uptime
-- Time since the last system boot (days, hours, minutes).
-- **Hostname** and **operating system**.
-
-### Battery
-- Charge percentage with a dynamic icon (charging/discharging).
-- Estimated time to full or remaining time.
-- On machines without a battery, shows "No battery detected".
-
-### Top processes
-- The 10 processes with the highest CPU usage.
-- Shows PID, name, CPU % and memory usage.
-
----
-
-## ⏰ Power Control
-
-### Scheduling an action
-
-1. Go to the **Power Control** section.
-2. Select the action type: **Shutdown**, **Restart**, **Suspend**, **Hibernate** or **Lock**.
-3. Choose the scheduling method:
-
-| Method | Description |
+| Section | Access |
 |---|---|
-| **Schedule by time** | Enter an amount and pick the unit (seconds, minutes, hours) |
-| **Schedule at exact hour** | Pick the time of day when the action will run |
-
-4. Click the schedule button.
-5. Confirm the action in the warning dialog.
-6. You'll see the **countdown** with a progress bar and animation.
-
-> ⚠️ **Note on exact hours:** if the time has already passed, the action is scheduled for the next day.
-
-### Cancelling an action
-
-- Click **Cancel** during the countdown, **or**
-- Press **Ctrl+C** at any time.
-
-> ✅ Cancelling fully aborts the scheduled action (the system verifies the original command never executes).
-
-### Behaviour on completion
-
-When the countdown reaches zero, the action runs:
-- **Windows**: `shutdown /s /r /h`, `rundll32` for suspend/lock.
-- **Linux**: `shutdown`, `systemctl`, `loginctl`.
-- **macOS**: `shutdown`, `pmset`.
-
-Some actions (suspend/hibernate) may require administrator rights on certain systems.
+| **Dashboard** | "Dashboard" tab — Main panel with live metrics |
+| **Processes** | "Processes" tab — System process manager |
+| **Power** | "Power" tab — Power action control |
+| **Settings** | "Settings" tab — Language, theme and options |
+| **Minimize** | Title bar button — Minimizes to system tray |
 
 ---
 
-## ⚙️ Settings
-
-### Language
-- Switch between **English** and **Español** instantly. The whole UI updates at once.
-
-### Appearance
-- **Theme**: Light, Dark or System (follows the OS).
-- Shortcut: **Ctrl+T** to cycle.
-
-### General
-- **Notifications** — enable/disable system alerts.
-- **Minimize to tray** — closing the window hides it to the tray instead of exiting.
-- **Start minimized** — the app starts hidden in the tray.
-- **Auto update** — automatically checks and installs new versions.
-
-### Saving changes
-- **Save settings** — persists the configuration to disk.
-- **Reset to defaults** — restores the default values.
-
----
-
-## ⌨️ Keyboard shortcuts
+## Keyboard shortcuts
 
 | Shortcut | Action |
 |---|---|
-| `Ctrl + C` | Cancel the scheduled power action |
-| `Ctrl + T` | Toggle theme (light → dark → system) |
-| `Ctrl + Q` | Quit the application |
-
-> On macOS, use `Cmd` instead of `Ctrl`.
+| `Ctrl+C` | Cancel active power timer |
+| `Ctrl+T` | Toggle theme (light / dark / system) |
+| `Ctrl+Q` | Exit application |
 
 ---
 
-## 🗔 System tray
+## Dashboard
 
-- Closing the window **minimizes to the tray** (if enabled).
-- Tray icon with a context menu: **Show EnergyPy** and **Quit**.
-- Clicking the tray icon restores the main window.
+The monitoring panel displays real-time metrics:
+
+| Card | Data shown |
+|---|---|
+| **CPU** | Overall usage, per-core, frequency, temperature (with color indicators), system uptime |
+| **Memory** | RAM and swap: used, total, usage percentage |
+| **Disk** | Reads/writes per second, used/free space |
+| **Network** | Upload/download speed, active interfaces |
+| **System Health** | Overall status progress bar |
+| **Process List** | Top 5 processes by CPU usage — link to full manager |
+
+### Skeleton loaders
+
+While initial data is loading, each card displays an animated skeleton with a shimmer effect, indicating that information is being processed.
+
+### Configurable refresh rate
+
+The refresh interval is configured in **Settings > Refresh Rate**, with options from 1 to 10 seconds.
 
 ---
 
-[← Installation](installation.md) · [Next: Development →](development.md)
+## Process Manager
+
+Accessible from the "Processes" tab or the "View all" link on the dashboard.
+
+### Features
+
+- **Search** — Filter by process name, PID, or executable path.
+- **Sorting** — Click any column header to sort.
+- **Kill individual** — "Kill" button at the end of each row. Shows confirmation dialog.
+- **Kill filtered** — "Kill Filtered" button to terminate all visible processes after a search.
+- **Extended info** — Each row shows: name, PID, CPU usage, memory usage, full executable path, and uptime.
+- **Scroll** — Table is fixed-height (max 500px) with internal scroll and sticky header.
+
+### Supported processes
+
+- Limit: 50 processes per query (sufficient for most common tasks).
+- Information: PID, name, CPU usage (%), memory usage (%), executable path, time since start, bytes read/written.
+
+---
+
+## Power Control
+
+### Schedule an action
+
+1. Select the action: Shutdown, Restart, Suspend, Hibernate, or Lock.
+2. Configure the timer: hours, minutes, seconds.
+3. Press "Start". The progress bar shows remaining time.
+4. You can cancel at any time with "Cancel" or `Ctrl+C`.
+
+### Run now
+
+Press "Run Now" to execute the action immediately. A confirmation dialog is shown before execution.
+
+### Available actions
+
+| Action | Description |
+|---|---|
+| **Shutdown** | Completely powers off the system |
+| **Restart** | Restarts the system |
+| **Suspend** | Sleep mode (low power) |
+| **Hibernate** | Hibernate (no power, state saved to disk) |
+| **Lock** | Locks the user session |
+
+---
+
+## Settings
+
+| Option | Description |
+|---|---|
+| **Language** | Switch between Spanish and English |
+| **Theme** | Light, Dark, or Follow System |
+| **Notifications** | Enable/disable system notifications |
+| **Auto-start** | Start EnergyPy when the computer boots |
+| **Refresh Rate** | Dashboard refresh interval (1-10 seconds) |
+| **About** | Developer information and GitHub profile link |
+
+---
+
+## Toast notifications
+
+EnergyPy displays pop-up notifications for:
+
+- Configuration save confirmations
+- System operation errors
+- Power action warnings
+- Status change information
+
+Notifications disappear automatically or can be closed manually.
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---|---|
+| Data not updating | Check the refresh interval in Settings |
+| Process won't terminate | Some system processes require admin privileges |
+| Temperature not displayed | Verify hardware sensors are available |
+| Kill button missing | Verify the process is not a system process |
+
+---
+
+## Next step
+
+- [Configuration](configuration.md) — Detailed configuration options reference.

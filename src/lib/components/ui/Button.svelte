@@ -18,7 +18,7 @@
     children?: import("svelte").Snippet;
   } & Omit<HTMLButtonAttributes, "class" | "children" | "onclick"> = $props();
 
-  let base = "inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-energy-500/50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 hover:scale-[1.02]";
+  let base = "inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-energy-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 hover:scale-[1.02]";
   let variants: Record<string, string> = {
     primary: "bg-energy-600 text-white hover:bg-energy-700 active:bg-energy-800",
     secondary: "bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-slate-600",

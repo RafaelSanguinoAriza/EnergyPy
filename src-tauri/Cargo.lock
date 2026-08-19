@@ -949,9 +949,10 @@ checksum = "66b7e2430c6dff6a955451e2cfc438f09cea1965a9d6f87f7e3b90decc014099"
 
 [[package]]
 name = "energypy_v20"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "chrono",
+ "libc",
  "log",
  "serde",
  "serde_json",

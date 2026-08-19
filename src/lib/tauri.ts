@@ -62,3 +62,22 @@ export function listenCountdown(callback: (action: ScheduledAction) => void) {
     callback(event.payload);
   });
 }
+
+export async function killProcess(pid: number): Promise<void> {
+  return invoke("kill_process", { pid });
+}
+
+export async function enableAutostart(): Promise<void> {
+  const { enable } = await import("@tauri-apps/plugin-autostart");
+  return enable();
+}
+
+export async function disableAutostart(): Promise<void> {
+  const { disable } = await import("@tauri-apps/plugin-autostart");
+  return disable();
+}
+
+export async function isEnabledAutostart(): Promise<boolean> {
+  const { isEnabled } = await import("@tauri-apps/plugin-autostart");
+  return isEnabled();
+}

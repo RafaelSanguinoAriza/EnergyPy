@@ -7,6 +7,8 @@ export interface AppConfig {
   minimize_to_tray: boolean;
   start_minimized: boolean;
   auto_update: boolean;
+  auto_start: boolean;
+  refresh_rate: number;
   last_tab: string;
 }
 
@@ -17,6 +19,8 @@ export const defaultConfig: AppConfig = {
   minimize_to_tray: true,
   start_minimized: false,
   auto_update: true,
+  auto_start: false,
+  refresh_rate: 2,
   last_tab: "dashboard",
 };
 

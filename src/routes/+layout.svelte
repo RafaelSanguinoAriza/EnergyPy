@@ -16,12 +16,13 @@
   import { confirm as dialogConfirm } from "@tauri-apps/plugin-dialog";
   import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
   import Sidebar from "$lib/components/sidebar/Sidebar.svelte";
+  import Toast from "$lib/components/ui/Toast.svelte";
 
   let { children }: { children?: import("svelte").Snippet } = $props();
 
   let configReady = $state(false);
 
-  const VALID_TABS = ["/dashboard", "/power", "/settings"];
+  const VALID_TABS = ["/dashboard", "/power", "/processes", "/settings"];
 
   $effect(() => {
     applyTheme($resolvedTheme);
@@ -130,11 +131,12 @@
   <Sidebar />
   <main class="flex-1 overflow-y-auto bg-gray-50 dark:bg-slate-900 p-4 lg:p-6">
     {#key $page.url.pathname}
-      <div transition:fly={{ x: 20, duration: 200 }}>
+      <div in:fly={{ x: 30, duration: 250, delay: 100 }} out:fly={{ x: -30, duration: 200 }}>
         {#if children}
           {@render children()}
         {/if}
       </div>
     {/key}
-  </main>
-</div>
+    </main>
+  </div>
+  <Toast />

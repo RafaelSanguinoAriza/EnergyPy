@@ -5,15 +5,15 @@
   import MemoryCard from "$lib/components/dashboard/MemoryCard.svelte";
   import DiskCard from "$lib/components/dashboard/DiskCard.svelte";
   import NetworkCard from "$lib/components/dashboard/NetworkCard.svelte";
-  import UptimeCard from "$lib/components/dashboard/UptimeCard.svelte";
   import BatteryCard from "$lib/components/dashboard/BatteryCard.svelte";
   import ProcessList from "$lib/components/dashboard/ProcessList.svelte";
-  import SystemHealthBar from "$lib/components/dashboard/SystemHealthBar.svelte";
   import SystemInfoCard from "$lib/components/dashboard/SystemInfoCard.svelte";
   import { LayoutDashboard } from "@lucide/svelte";
+
+  const stagger = [0, 60, 120, 180, 240, 300, 360];
 </script>
 
-<div class="space-y-6">
+<div class="space-y-4">
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 bg-gradient-to-br from-energy-400 to-energy-600 rounded-xl flex items-center justify-center shadow-lg shadow-energy-500/20 shrink-0">
@@ -33,42 +33,35 @@
     </div>
   </div>
 
-  <SystemHealthBar
-    cpu={$systemStats?.cpu ?? null}
-    memory={$systemStats?.memory ?? null}
-    disks={$systemStats?.disks ?? []}
-    battery={$systemStats?.battery ?? null}
-  />
-
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-    <div class="lg:col-span-2">
+    <div class="lg:col-span-3 animate-fade-in-up" style="animation-delay: {stagger[0]}ms">
       <CpuCard cpu={$systemStats?.cpu ?? null} />
     </div>
-    <div class="lg:col-span-2">
-      <MemoryCard memory={$systemStats?.memory ?? null} />
-    </div>
-    <div class="lg:col-span-2">
-      <DiskCard disks={$systemStats?.disks ?? []} />
-    </div>
-    <div>
-      <NetworkCard networks={$systemStats?.networks ?? []} />
-    </div>
-    <div>
-      <BatteryCard battery={$systemStats?.battery ?? null} />
-    </div>
-    <div class="lg:col-span-2">
-      <UptimeCard uptimeSeconds={$systemStats?.uptime_seconds ?? 0} hostname={$systemStats?.hostname ?? ""} os={$systemStats?.os ?? ""} />
-    </div>
-    <div class="lg:col-span-2">
+    <div class="lg:col-span-1 animate-fade-in-up" style="animation-delay: {stagger[1]}ms">
       <SystemInfoCard
+        uptimeSeconds={$systemStats?.uptime_seconds ?? 0}
         hostname={$systemStats?.hostname ?? ""}
         os={$systemStats?.os ?? ""}
         kernel={$systemStats?.kernel ?? ""}
         arch={$systemStats?.arch ?? ""}
-        uptimeSeconds={$systemStats?.uptime_seconds ?? 0}
       />
     </div>
-    <div class="md:col-span-2 lg:col-span-4">
+
+    <div class="lg:col-span-2 animate-fade-in-up" style="animation-delay: {stagger[2]}ms">
+      <MemoryCard memory={$systemStats?.memory ?? null} />
+    </div>
+    <div class="lg:col-span-2 animate-fade-in-up" style="animation-delay: {stagger[3]}ms">
+      <NetworkCard networks={$systemStats?.networks ?? []} />
+    </div>
+
+    <div class="lg:col-span-2 animate-fade-in-up" style="animation-delay: {stagger[4]}ms">
+      <DiskCard disks={$systemStats?.disks ?? []} />
+    </div>
+    <div class="lg:col-span-2 animate-fade-in-up" style="animation-delay: {stagger[5]}ms">
+      <BatteryCard battery={$systemStats?.battery ?? null} />
+    </div>
+
+    <div class="md:col-span-2 lg:col-span-4 animate-fade-in-up" style="animation-delay: {stagger[6]}ms">
       <ProcessList processes={$systemStats?.top_processes ?? []} />
     </div>
   </div>

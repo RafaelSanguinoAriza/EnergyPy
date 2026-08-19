@@ -1,156 +1,210 @@
-# 🏗️ Architecture — EnergyPy
+# EnergyPy — Architecture
 
-> **Docs index:** [README](../README.md) · [Installation](installation.md) · [Usage](usage.md) · [Development](development.md) · [Configuration](configuration.md)
+Technical reference for the application's internal design.
 
 ---
 
 ## Overview
 
-EnergyPy uses a **hybrid architecture**:
-
-- **Frontend**: SvelteKit 5 + TypeScript (SPA) rendered in a WebView.
-- **Backend**: native Rust compiled to a binary, communicating with the frontend via **IPC** (command invoke + events).
-
 ```
-┌────────────────────────────────────┐
-│           SvelteKit (WebView)      │
-│  UI · Stores · i18n · Components   │
-└──────────────┬─────────────────────┘
-               │  IPC (invoke / events)
-┌──────────────▼─────────────────────┐
-│            Tauri Core (Rust)       │
-│  SystemMonitor · PowerManager      │
-│  Config · Tray · Plugins · Threads │
-└────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│                  EnergyPy                         │
+├────────────────────┬────────────────────────────┤
+│   Frontend (Web)   │      Backend (Rust)         │
+│   SvelteKit 5 +    │      sysinfo + Tauri        │
+│   TypeScript        │      IPC Commands           │
+└────────┬───────────┴──────────────┬─────────────┘
+         │ invoke()                 │ tauri::command
+         │                          │
+         │  system_monitor.rs       │  ⇅ JSON
+         │  power_manager.rs        │
+         │  config.rs               │
+         └──────────────────────────┘
 ```
+
+- **Frontend:** SvelteKit + TypeScript + Tailwind CSS + Lucide.
+- **Backend:** Rust with `sysinfo` for system metrics.
+- **Communication:** Synchronous/asynchronous IPC via `invoke()`.
+- **Config:** JSON file persisted by the backend.
 
 ---
 
-## Frontend layer (SvelteKit)
+## Startup process
 
-### Tauri communication
-
-All commands are exposed in `src/lib/tauri.ts`:
-
-| TS function | Rust command | Description |
-|---|---|---|
-| `getSystemStats()` | `get_system_stats` | System statistics |
-| `scheduleShutdown()` | `schedule_shutdown` | Schedule a power action |
-| `scheduleAtTime()` | `schedule_at_time` | Schedule at an exact hour |
-| `cancelShutdown()` | `cancel_shutdown` | Cancel the scheduled action |
-| `getScheduledAction()` | `get_scheduled_action` | Countdown state |
-| `getConfig()` | `get_config` | Saved configuration |
-| `saveConfig()` | `save_config` | Persist configuration |
-| `exitApp()` | `exit_app` | Quit the app |
-| `requiresAdmin()` | `requires_admin` | Check admin privileges |
-
-### Backend events
-
-| Event | Frequency | Payload |
-|---|---|---|
-| `system-stats` | every 2 s | Full `SystemStats` |
-| `countdown-tick` | every 1 s | `ScheduledAction` (progress) |
-
-### Svelte stores
-
-| Store | Content |
-|---|---|
-| `systemStats` | Latest stats reading |
-| `cpuHistory` | CPU history (60 samples) |
-| `scheduledAction` | Countdown state |
-| `appConfig` | Reactive configuration |
-| `theme` | Theme preference |
-| `resolvedTheme` | Effective theme (after resolving "system") |
-| `currentLang` | Active language |
-
-### i18n system
-
-`src/lib/i18n/index.ts` defines a derived store `t`:
-
-```ts
-export const t = derived(currentLang, ($lang) => (key, params?) => { ... });
-```
-
-- Dictionaries live in `en.json` and `es.json`.
-- Keys are **flat** (no prefixes).
-- Use `{$t("key")}` in templates; wrap in `$derived` for reactivity in `<script>`.
+1. **`app.html`** — Loads the SvelteKit HTML shell.
+2. **`+layout.server.ts`** — Detects the OS language (`platformLocale`).
+3. **`+layout.svelte`** — Renders sidebar, header and applies the global theme.
+4. **`+page.server.ts`** — Redirects `/` to `/dashboard`.
+5. **Dashboard** — Renders the Bento Grid with all cards (Skeleton loaders display until data arrives).
+6. **Backend** — `SystemMonitor::new()` initializes `sysinfo` with `Components::new_with_refreshed_list()` for temperature. `PowerManager` creates a `Manager`. `AppConfig` is created from file or default. The power daemon is initialized.
+7. **Windows COM** — `CoInitializeEx(COINIT_APARTMENTTHREADED)` is called at the start of `run()` to prevent the `RPC_E_CHANGED_MODE` conflict with `tauri-plugin-notification`.
 
 ---
 
-## Backend layer (Rust)
+## Rust Backend (src-tauri/)
 
-### Modules
+### Main modules
 
 | Module | Responsibility |
 |---|---|
-| `lib.rs` | Entry point, global state, tray, emitter threads |
-| `system_monitor.rs` | Reading system metrics (crate `sysinfo`) |
-| `power_manager.rs` | Scheduling and executing power actions |
-| `config.rs` | Loading/saving configuration to disk |
+| `lib.rs` | Tauri setup + IPC commands + COM initialization (Windows) |
+| `system_monitor.rs` | System data collection (CPU with temperature, memory, disk, network, battery, processes) |
+| `power_manager.rs` | Power control (shutdown, restart, suspend, hibernate, lock) |
+| `config.rs` | Configuration persistence (JSON file) |
 
-### `system_monitor.rs`
+### IPC Commands (`lib.rs`)
 
-Uses the **sysinfo** crate for:
+| Command | Type | Description |
+|---|---|---|
+| `get_system_stats` | async | Returns `SystemStats` (CPU, memory, disk, network, battery, uptime, processes) |
+| `get_battery_info` | async | Returns `BatteryInfo` separately |
+| `get_process_list` | async | Returns `Vec<ProcessInfo>` (up to 50 processes with extended info) |
+| `kill_process` | async | Terminates a process by PID (Windows: `taskkill /F /PID`, Linux/macOS: `SIGKILL`) |
+| `schedule_power_action` | async | Schedules a power action with timer |
+| `cancel_power_action` | async | Cancels the active timer |
+| `get_power_state` | async | Returns `PowerState` (active timer, action, progress) |
+| `execute_power_action` | sync | Executes an immediate power action |
+| `get_config` | async | Reads current configuration |
+| `save_config` | async | Saves configuration and applies changes (theme, language, etc.) |
 
-- **CPU**: global and per-core usage, frequency, brand.
-- **Memory**: total, used, available, swap.
-- **Disks**: partitions with used/total space.
-- **Network**: computes **speed** as a differential between measurements (saving previous values before each refresh).
-- **Battery**:
-  - Windows: `wmic` (run silently).
-  - Linux: reading `/sys/class/power_supply/BAT*` (supports `BAT0`, `BAT1`, etc.).
-  - macOS: `pmset -g batt`.
-- **Processes**: top 10 by CPU usage.
+### System data (`SystemStats`)
 
-### `power_manager.rs`
+```rust
+pub struct SystemStats {
+    pub cpu: CpuInfo,           // Usage, cores, frequency, uptime, temperature
+    pub memory: MemoryInfo,     // RAM and swap
+    pub disk: DiskInfo,         // Reads/writes, space
+    pub network: NetworkInfo,   // Interfaces, traffic
+    pub battery: BatteryInfo,   // Level, status, time remaining
+    pub uptime: u64,            // System uptime in seconds
+    pub processes: Vec<ProcessInfo>, // Top 50 processes
+}
+```
 
-Keeps the scheduled action state plus an **atomic generation token** (`AtomicU64`):
+### CpuInfo (with temperature)
 
-- `schedule(seconds, action)` — increments the generation and spawns a thread that sleeps `seconds`.
-- The thread, before executing, **verifies the generation hasn't changed** (not cancelled or replaced).
-- `cancel()` — increments the generation (invalidates pending threads) and runs the OS abort command.
-- `schedule_at_time()` — computes the delta to the target hour (if already passed, schedules for the next day).
+```rust
+pub struct CpuInfo {
+    pub usage: f32,             // Overall usage 0-100%
+    pub cores: Vec<f32>,        // Per-core usage
+    pub frequency: u64,         // Frequency in MHz
+    pub uptime: u64,            // Uptime in seconds
+    pub temperature: Option<f32>, // Temperature in °C (None if unavailable)
+}
+```
 
-This guarantees that cancelling an action **really aborts** the scheduled shutdown/restart.
+Temperature is obtained from `sysinfo::Components`, initialized with `Components::new_with_refreshed_list()` in `SystemMonitor::new()` and refreshed in each `refresh()` cycle.
 
-### `config.rs`
+### ProcessInfo (extended)
 
-- Saves config as JSON in:
-  - Windows: `%APPDATA%\EnergyPy\config.json`
-  - Linux: `~/.config/EnergyPy/config.json`
-  - macOS: `~/Library/Application Support/EnergyPy/config.json`
-- If the file is missing or invalid, returns default values.
+```rust
+pub struct ProcessInfo {
+    pub pid: u32,
+    pub name: String,
+    pub cpu_usage: f32,         // Percentage 0-100%
+    pub memory_usage: f32,      // Percentage 0-100%
+    pub exe: Option<String>,    // Full executable path
+    pub start_time: Option<u64>, // Start timestamp (epoch seconds)
+    pub disk_read: u64,         // Bytes read
+    pub disk_write: u64,        // Bytes written
+}
+```
 
-### `lib.rs`
+### Kill Process
 
-- Initializes the logger (`simplelog`) writing to `energypy.log` in the same config directory.
-- Configures **plugins**: opener, notification, shell, autostart, process, single-instance, dialog, updater.
-- Creates the **system tray** (menu: Show / Quit; click restores the window).
-- Spawns **two emitter threads**: `system-stats` (2 s) and `countdown-tick` (1 s).
+Terminates a process by PID using the OS-native method:
+- **Windows:** `taskkill /F /PID <pid>` (force kill)
+- **Linux/macOS:** `libc::kill(pid, SIGKILL)`
 
 ---
 
-## Security and external processes
+## Svelte Frontend (src/)
 
-All external commands (`shutdown`, `rundll32`, `wmic`, `systemctl`, `pmset`, `loginctl`) run **silently**:
+### Stores (Svelte 5 runes)
 
-- `stdout`/`stderr` redirected to null or piped (no console).
-- On Windows, the `CREATE_NO_WINDOW` flag (0x08000000) is used to **prevent a console from flashing**.
-- This fix was applied in v2.0.0 (`power_manager.rs` and `system_monitor.rs`).
+| Store | Responsibility |
+|---|---|
+| `config.ts` | `AppConfig`: language, theme, notifications, start_minimized, tray_enabled, auto_start, refresh_rate |
+| `language.ts` | Current language + translations + `t()` function |
+| `system.ts` | System data: `SystemStats`, `CpuInfo`, `MemoryInfo`, `DiskInfo`, `NetworkInfo`, `BatteryInfo`, `ProcessInfo` |
+| `power.ts` | Power state: timer, active action, progress |
+| `toast.ts` | Toast notification queue (success, error, warning, info) |
 
-The release binary uses `#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]`, preventing a console window in production.
+### IPC Functions (TypeScript)
+
+```typescript
+// system.ts
+getSystemStats()    → Promise<SystemStats>
+getBatteryInfo()    → Promise<BatteryInfo>
+getProcessList()    → Promise<ProcessInfo[]>
+killProcess(pid)    → Promise<void>
+
+// power.ts
+schedulePowerAction(action, hours, minutes, seconds) → Promise<void>
+cancelPowerAction()   → Promise<void>
+getPowerState()       → Promise<PowerState>
+executePowerAction()  → Promise<void>
+
+// config.ts
+getConfig()    → Promise<AppConfig>
+saveConfig()   → Promise<void>
+
+// autostart.ts (Tauri plugins)
+enableAutostart()      → Promise<void>
+disableAutostart()     → Promise<void>
+isEnabledAutostart()   → Promise<boolean>
+```
+
+### Routing (SvelteKit)
+
+```
+/                  → redirect to /dashboard
+/dashboard         → Bento Grid (CPU, Memory, Disk, Network, SystemInfo, HealthBar, ProcessList)
+/processes         → Process manager (table, search, sort, kill)
+/power             → Power control (scheduling + manual execution)
+/settings          → Settings (language, theme, notifications, autostart, refresh rate, about)
+```
+
+### Transitions
+
+Pages animate with bidirectional `in:fly`/`out:fly`:
+- Enter: `x: 30 → 0`, duration 250ms, delay 100ms
+- Exit: `x: 0 → -30`, duration 200ms
+
+Process rows use `transition:fade` with 120ms duration.
 
 ---
 
-## Data flow (example: scheduling a shutdown)
+## Persistence
 
-1. The user clicks "Schedule" in the form.
-2. `ScheduleForm.svelte` confirms via a dialog and calls `scheduleShutdown(seconds, actionType)`.
-3. Tauri IPC invokes `schedule_shutdown` in Rust.
-4. `PowerManager::schedule()` stores the action and spawns the thread.
-5. Every second, `countdown-tick` emits the progress → updates the countdown in the UI.
-6. If the user cancels, `cancel()` invalidates the thread and runs `shutdown /a`.
+| Data | Store | Format |
+|---|---|---|
+| Configuration | JSON file in system config directory | Serialized `AppConfig` |
+| Logs | Rotating files | Plain text |
+| No database | — | — |
 
 ---
 
-[← Development](development.md) · [Next: Configuration →](configuration.md)
+## Performance
+
+- **Backend:** `sysinfo` refreshes metrics on each invoke (~100ms per query).
+- **Frontend:** Configurable polling (default 2s, range 1-10s) with `setInterval`.
+- **Memory:** ~50 MB during normal operation.
+- **CPU:** <1% when idle.
+- **Skeleton loaders:** Display immediately while real data arrives.
+- **Toast notifications:** Auto-dismiss with animation, non-blocking.
+
+---
+
+## Security
+
+- **IPC whitelist:** Only commands defined in `tauri.conf.json` are exposed.
+- **Permissions:** Tauri v2 uses a granular per-plugin permission system.
+- **No web server:** The app doesn't expose ports or HTTP endpoints.
+- **Kill process:** Requires user confirmation before execution.
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](../../CHANGELOG.md) for recent changes.

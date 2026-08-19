@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from "$lib/i18n";
   import Card from "../ui/Card.svelte";
+  import Skeleton from "../ui/Skeleton.svelte";
   import { formatBitsPerSecond } from "$lib/formatters";
   import { Network } from "@lucide/svelte";
 
@@ -27,6 +28,10 @@
       {/each}
     </div>
   {:else}
-    <p class="text-sm text-gray-400">{$t("loading")}</p>
+    <div class="space-y-2">
+      {#each Array(3) as _}
+        <Skeleton class="h-10 w-full" variant="rect" />
+      {/each}
+    </div>
   {/if}
 </Card>

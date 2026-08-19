@@ -22,7 +22,17 @@ export const resolvedTheme = derived([theme, osTheme], ([$theme, $os]) => {
   return $os;
 });
 
+let prevResolved: "light" | "dark" | null = null;
+
 export function applyTheme(resolved: "light" | "dark") {
+  if (prevResolved !== null && prevResolved !== resolved) {
+    document.body.classList.add("theme-transitioning");
+    setTimeout(() => {
+      document.body.classList.remove("theme-transitioning");
+    }, 250);
+  }
+  prevResolved = resolved;
+
   if (resolved === "dark") {
     document.documentElement.classList.add("dark");
   } else {

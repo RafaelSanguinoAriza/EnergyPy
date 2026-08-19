@@ -1,7 +1,7 @@
 {
   "name": "energypy_v20",
-  "version": "2.0.0",
-  "description": "",
+  "version": "2.0.1",
+  "description": "EnergyPy — real-time system resource monitoring and power control desktop app",
   "type": "module",
   "scripts": {
     "dev": "vite dev",

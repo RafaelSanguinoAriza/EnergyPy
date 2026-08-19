@@ -1,63 +1,51 @@
-# 💻 Development Guide — EnergyPy
+# EnergyPy — Development
 
-> **Docs index:** [README](../README.md) · [Installation](installation.md) · [Usage](usage.md) · [Architecture](architecture.md) · [Configuration](configuration.md)
+Development environment setup, building, and contributing.
 
 ---
 
-## Prerequisites
+## Requirements
 
-| Tool | Minimum version | Notes |
+| Tool | Minimum version | Verify |
 |---|---|---|
-| [Node.js](https://nodejs.org) | 20+ | Includes npm |
-| [Rust](https://www.rust-lang.org/tools/install) | 1.77+ | Install via `rustup` |
+| Node.js | 20+ | `node --version` |
+| npm | 9+ | `npm --version` |
+| Rust | 1.77+ (stable) | `rustc --version` |
+| Cargo | Latest | `cargo --version` |
 
-### Per-OS dependencies
+### System dependencies
 
-**Windows**
-- Option A (recommended): [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) with the *"Desktop development with C++"* workload.
-- Option B: MSYS2 + MinGW-w64 (GNU toolchain), as used in this project:
-  ```
-  rustup default stable-x86_64-pc-windows-gnu
-  ```
-  and make sure `C:\msys64\mingw64\bin` is in your `PATH`.
+**Windows:**
+- Visual Studio Build Tools 2022 (C++ workload)
+- WebView2 Runtime (included in updated Windows 10/11)
 
-> ⚠️ **Note (Windows GNU):** this repository is set up for the GNU toolchain.
-> MinGW's `ld` overflows the PE export table (error *"export ordinal too
-> large"*) when linking Tauri's `cdylib` in debug builds; that is why
-> `[profile.dev] opt-level = 2` is configured in `src-tauri/Cargo.toml`. Do not
-> remove it if you build with GNU.
-
-**Linux (Debian/Ubuntu)**
+**Linux (Ubuntu/Debian):**
 ```bash
-sudo apt update
-sudo apt install libwebkit2gtk-4.1-dev \
-  build-essential \
-  curl \
-  wget \
-  file \
-  libxdo-dev \
-  libssl-dev \
-  libayatana-appindicator3-dev \
-  librsvg2-dev
+sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget \
+  file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
 ```
 
-**macOS**
+**Linux (Fedora):**
+```bash
+sudo dnf groupinstall "Development Tools"
+sudo dnf install webkit2gtk4.1-devel openssl-devel curl wget file \
+  libappindicator-gtk3-devel librsvg2-devel
+```
+
+**macOS:**
 ```bash
 xcode-select --install
-brew install webkit2gtk  # if needed
 ```
 
 ---
 
-## Project setup
+## Quick start
 
 ```bash
-# Clone the repository
-git clone <your-repo>/EnergyPy.git
+git clone https://github.com/RafaelSanguinoAriza/EnergyPy.git
 cd EnergyPy
-
-# Install dependencies
 npm install
+npm run tauri dev
 ```
 
 ---
@@ -66,142 +54,171 @@ npm install
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Vite dev server (frontend only) |
-| `npm run tauri dev` | Full development: frontend + native window with hot reload |
-| `npm run build` | Production frontend build |
-| `npm run check` | Type checking (svelte-check + TypeScript) |
-| `npm test` | Frontend unit tests (Vitest) |
-| `cargo test` | Rust backend tests (run in `src-tauri/`) |
-| `npm run tauri build` | Build production installers |
-| `npm run tauri icon` | Regenerate app icons from a source PNG |
-
----
-
-## Testing
-
-```bash
-npm test                 # Frontend: Vitest (tests/formatters.test.ts)
-cargo test               # Backend: run inside src-tauri/
-```
-
-- Frontend: covers formatting utilities (`formatBytes`, `formatUptime`,
-  `formatTimeRemaining`, `formatDurationShort`, etc.).
-- Backend: covers scheduling logic (`seconds_until`), `ActionType` lowercase
-  serialization, and admin detection in `power_manager.rs`.
+| `npm install` | Install frontend dependencies |
+| `npm run check` | TypeScript + Svelte type checking |
+| `npm run check:watch` | Type checking in watch mode |
+| `npm test` | Run frontend unit tests (Vitest) |
+| `npm run test:ui` | Vitest web interface |
+| `npm run tauri dev` | Development server with hot reload |
+| `npm run tauri build` | Build production versions |
+| `cargo test` | Run backend tests (in `src-tauri/`) |
 
 ---
 
 ## Project structure
 
 ```
-EnergyPy/
-├── src/                          # SvelteKit frontend
-│   ├── app.css                   # Tailwind CSS v4 + custom theme
-│   ├── app.html                  # HTML template
+EnergyPy_V2.0/
+├── src/                          # SvelteKit Frontend
+│   ├── routes/                   # Pages (file-based routing)
+│   │   ├── +layout.svelte        # Global layout: sidebar, header, transitions, toast
+│   │   ├── +layout.server.ts     # Server load: language from system settings
+│   │   ├── +page.server.ts       # Redirect: / → /dashboard
+│   │   ├── dashboard/
+│   │   │   └── +page.svelte      # Bento Grid: CPU, Memory, Disk, Network, SystemInfo, HealthBar, ProcessList
+│   │   ├── processes/
+│   │   │   └── +page.svelte      # Process manager: table with search, sort, kill
+│   │   ├── power/
+│   │   │   └── +page.svelte      # Power control: scheduling + manual execution
+│   │   └── settings/
+│   │       └── +page.svelte      # Settings: language, theme, notifications, autostart, refresh rate, about
 │   ├── lib/
 │   │   ├── components/
-│   │   │   ├── dashboard/        # Monitoring cards
-│   │   │   ├── power/            # Form + countdown
-│   │   │   ├── sidebar/          # Navigation
-│   │   │   ├── theme/            # Theme picker
-│   │   │   └── ui/               # Base components (Card, Button, etc.)
-│   │   ├── i18n/                 # Translations (en.json, es.json)
-│   │   ├── stores/               # Svelte stores
-│   │   ├── formatters.ts         # Formatting utilities
-│   │   ├── tauri.ts              # Tauri command wrappers
-│   │   └── update.ts             # Update utility
-│   └── routes/                   # Pages (dashboard, power, settings)
-├── src-tauri/                    # Rust backend
+│   │   │   ├── dashboard/        # Dashboard components
+│   │   │   │   ├── CpuCard.svelte
+│   │   │   │   ├── MemoryCard.svelte
+│   │   │   │   ├── DiskCard.svelte
+│   │   │   │   ├── NetworkCard.svelte
+│   │   │   │   ├── SystemInfoCard.svelte
+│   │   │   │   ├── SystemHealthBar.svelte
+│   │   │   │   └── ProcessList.svelte
+│   │   │   ├── processes/
+│   │   │   │   └── ProcessTable.svelte
+│   │   │   ├── power/
+│   │   │   │   └── ActionForm.svelte
+│   │   │   └── ui/               # Reusable components
+│   │   │       ├── Button.svelte
+│   │   │       ├── Card.svelte
+│   │   │       ├── Input.svelte
+│   │   │       ├── Select.svelte
+│   │   │       ├── Slider.svelte
+│   │   │       ├── Badge.svelte
+│   │   │       ├── Tooltip.svelte
+│   │   │       ├── Sidebar.svelte
+│   │   │       ├── Header.svelte
+│   │   │       ├── Progress.svelte
+│   │   │       ├── Skeleton.svelte
+│   │   │       ├── SkeletonCard.svelte
+│   │   │       ├── Toast.svelte
+│   │   │       ├── SystemLogo.svelte
+│   │   │       ├── SystemLogoFavicon.svelte
+│   │   │       └── EnergyPyLogo.svelte
+│   │   ├── i18n/                 # Internationalization
+│   │   │   ├── en.json
+│   │   │   └── es.json
+│   │   ├── stores/               # Global state (Svelte 5 runes)
+│   │   │   ├── config.ts         # AppConfig — language, theme, notifications, start_minimized, tray_enabled, auto_start, refresh_rate
+│   │   │   ├── language.ts       # Current language + translations
+│   │   │   ├── system.ts         # System data: CpuInfo, MemoryInfo, DiskInfo, NetworkInfo, BatteryInfo, ProcessInfo
+│   │   │   ├── power.ts          # Power state: is_timer_running, timer_action, timer_total_seconds, timer_remaining_seconds
+│   │   │   └── toast.ts          # Toast notifications: success, error, warning, info
+│   │   ├── tauri.ts              # Wrapper functions for Tauri IPC invoke
+│   │   └── constants.ts          # Route constants
+│   └── app.html                  # HTML shell
+├── src-tauri/                    # Rust Backend (Tauri)
+│   ├── Cargo.toml                # Rust dependencies + metadata (v2.0.1)
+│   ├── tauri.conf.json           # Tauri configuration (v2.0.1)
 │   ├── src/
-│   │   ├── lib.rs                # Entry point, state, tray, threads
-│   │   ├── system_monitor.rs     # System monitoring (sysinfo)
-│   │   ├── power_manager.rs      # Power action scheduling
-│   │   └── config.rs             # Configuration persistence
-│   ├── icons/                    # Generated icons
-│   ├── capabilities/             # App permissions
-│   ├── Cargo.toml                # Rust dependencies
-│   └── tauri.conf.json           # Tauri configuration
-├── docs/                         # Documentation (es/en)
-├── static/                       # Static assets
-├── package.json
-└── README.md
+│   │   ├── lib.rs                # Tauri setup + IPC commands + app setup + COM STA init (Windows)
+│   │   ├── system_monitor.rs     # sysinfo: CPU (with temperature via Components), Memory, Disk, Network, Battery, Processes
+│   │   ├── power_manager.rs      # Power actions: shutdown, restart, suspend, hibernate, lock (cross-platform)
+│   │   └── config.rs             # AppConfig persistence (JSON file in app config dir)
+│   └── icons/                    # App icons
+├── tests/                        # Unit tests
+│   └── formatters.test.ts        # System data formatting tests
+├── docs/                         # Professional documentation
+│   ├── en/                       # English documentation
+│   │   ├── README.md
+│   │   ├── installation.md
+│   │   ├── usage.md
+│   │   ├── development.md
+│   │   ├── architecture.md
+│   │   └── configuration.md
+│   └── es/                       # Spanish documentation
+│       ├── README.md
+│       ├── instalacion.md
+│       ├── uso.md
+│       ├── desarrollo.md
+│       ├── arquitectura.md
+│       └── configuracion.md
+├── README.md                     # Main README
+├── CHANGELOG.md                  # Changelog (v2.0.1)
+├── LICENSE                       # MIT License
+└── package.json                  # npm scripts + dependencies
 ```
 
 ---
 
-## Typical workflow
+## Debugging
 
-1. **Edit the frontend** in `src/` — changes appear instantly in `tauri dev`.
-2. **Edit the backend** in `src-tauri/src/` — Tauri recompiles the binary automatically.
-3. **Add a new command**:
-   - In Rust: `#[tauri::command] fn my_command() { ... }` and add it to the `invoke_handler` in `lib.rs`.
-   - In TS: add a wrapper in `src/lib/tauri.ts` using `invoke("my_command", args)`.
-   - **Note:** Tauri v2 converts `snake_case` to `camelCase` for arguments (e.g. `action_type` → `actionType`).
-4. **Check types:** `npm run check`.
-5. **Build:** `npm run tauri build`.
+### Frontend (SvelteKit)
 
----
+- The development server runs at `http://localhost:5173/`.
+- Use browser DevTools to inspect the frontend.
+- Tauri logs are shown in the terminal where you run `npm run tauri dev`.
 
-## Adding a new language
+### Backend (Rust)
 
-1. Create `src/lib/i18n/xx.json` with the same keys as `en.json`.
-2. In `src/lib/i18n/index.ts`:
-   - Import the file: `import xx from "./xx.json";`
-   - Add it to the `Record`: `const translations = { en, es, xx };`
-   - Add the language to `availableLanguages`.
-3. Translate all the app strings.
+- Logs are written to `logs/energy_py.log` (development) or the config directory (production).
+- Log level: `Debug` in development, `Info` in production.
+- Use `RUST_LOG=debug npm run tauri dev` for detailed logs.
 
----
+### Tests
 
-## Logging system
+```bash
+# Frontend
+npm test
 
-The app uses `log` + `simplelog`. Logs are written to a file:
-- **Windows**: `%APPDATA%\EnergyPy\energypy.log`
-- **Linux**: `~/.config/EnergyPy/energypy.log`
-- **macOS**: `~/Library/Application Support/EnergyPy/energypy.log`
-
-To add logging in Rust:
-```rust
-log::info!("message");
-log::warn!("warning");
-log::error!("error");
+# Backend (from src-tauri/)
+cargo test
 ```
 
 ---
 
-## Production build
+## Building for production
 
 ```bash
 npm run tauri build
 ```
 
-### Outputs (Windows)
+Installers are located in `src-tauri/target/release/bundle/`:
+- **Windows:** `nsis/` (NSIS installer) or `msi/` (MSI installer)
+- **Linux:** `deb/` (Debian package) or `appimage/` (AppImage)
+- **macOS:** `dmg/` (disk image)
 
-| Format | Path |
-|---|---|
-| Executable | `src-tauri/target/release/energypy_v20.exe` |
-| MSI | `src-tauri/target/release/bundle/msi/EnergyPy_2.0.0_x64_en-US.msi` |
-| NSIS | `src-tauri/target/release/bundle/nsis/EnergyPy_2.0.0_x64-setup.exe` |
+### Portable zip (Windows)
 
-### Regenerating icons
+After building with `npm run tauri build`:
 
-```bash
-npm run tauri icon <png-file-1024x1024>
+```powershell
+New-Item -ItemType Directory -Path dist\EnergyPy -Force
+Copy-Item src-tauri\target\release\energypy_v20.exe, src-tauri\target\release\WebView2Loader.dll dist\EnergyPy\
+Compress-Archive -Path dist\EnergyPy -DestinationPath dist\EnergyPy_2.0.1_x64_portable.zip
+Remove-Item dist\EnergyPy -Recurse -Force
 ```
 
 ---
 
-## Publishing & security
+## Code conventions
 
-Before publishing the repository or a release:
-
-1. Replace `YOUR_GITHUB_USER` with the real user (`RafaelSanguinoAriza`) in
-   `src-tauri/tauri.conf.json` (`plugins.updater.endpoints`).
-2. Configure the GitHub secrets `TAURI_SIGNING_PRIVATE_KEY` and
-   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (see `.github/workflows/release.yml`).
-3. Read [SECURITY.md](../../SECURITY.md) — the `.updater-key` file (private
-   key) must never be published and is already excluded in `.gitignore`.
+- **Components:** PascalCase (`CpuCard.svelte`)
+- **Stores:** camelCase (`system.ts` → `systemStore`)
+- **IPC functions:** snake_case in Rust (`get_system_stats`), camelCase in TypeScript (`getSystemStats`)
+- **Styles:** Tailwind CSS with custom theme
+- **Tests:** Vitest with describe/it blocks in English
 
 ---
 
-[← Usage](usage.md) · [Next: Architecture →](architecture.md)
+## Changelog
+
+See [CHANGELOG.md](../../CHANGELOG.md) for recent changes.
